@@ -115,43 +115,57 @@ textarea#jsonout{min-height:120px;font:12px/1.3 ui-monospace,Menlo,monospace}
 .lnk{color:var(--accent);cursor:pointer;text-decoration:underline}
 .me-tag{color:var(--ochre);font-weight:700;font-size:.8rem}
 .grab{display:none}
+.pw{position:relative;display:flex}.pw input{flex:1;padding-right:40px;min-width:0}
+.eye{position:absolute;right:2px;top:50%;transform:translateY(-50%);border:0;background:none;padding:4px 8px;font-size:1rem;line-height:1;opacity:.6}
+.eye.on{opacity:1}
+.secret{font-family:ui-monospace,Menlo,monospace}
+button,a,.node{touch-action:manipulation}
 @media (max-width:820px){
-  body{font-size:14px}
-  .wrap{padding-inline:6px;padding-block:6px 90px;gap:8px}
-  header{gap:6px}
-  .trees{gap:2px 14px}
-  .trees button{font-size:1.15rem}
-  .sub{font-size:.78rem}
-  .hright{align-items:flex-start;width:100%;flex-direction:row;justify-content:space-between;flex-wrap:wrap}
-  .stats{gap:10px;font-size:.78rem}
-  .who{justify-content:flex-start}
-  .sub{display:none}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{font-size:14px;-webkit-text-size-adjust:100%}
+  input,select,textarea{font-size:16px!important}
+  .wrap{height:100dvh;display:flex;flex-direction:column;gap:6px;padding-inline:6px;padding-block:calc(env(safe-area-inset-top,0px) + 6px) 0}
+  header{gap:4px 8px;align-items:center;flex:none}
+  header>div:first-child{width:100%}
+  .trees{gap:2px 14px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .trees button{font-size:1.05rem;white-space:nowrap;padding-bottom:2px}
+  .sub,.stats,#whoTxt,details.help{display:none!important}
+  .hright{flex-direction:row;align-items:center;justify-content:space-between;width:100%;gap:6px}
+  .who{flex-wrap:nowrap}
+  .who button,.lang button{padding:5px 9px;font-size:.8rem}
+  .gsearch{width:100%;flex:none}
   .bar{gap:6px}
   .bar button{padding:6px 9px;font-size:.82rem;white-space:nowrap;flex:none}
-  .wrap>.bar.tools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .wrap>.bar.tools{flex:none;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .wrap>.bar.tools::-webkit-scrollbar,.trees::-webkit-scrollbar{display:none}
   .wrap>.bar.tools .seg{flex:none}
-  .gsearch{width:100%}
+  .lctl input[type=search]{min-width:160px}
   .gq-res{position:fixed;left:6px;right:6px;width:auto;max-width:none}
-  .card>div:nth-of-type(1){display:flex;flex-direction:column}
-  .card>div:nth-of-type(1) h2{order:-1}
   #zIn,#zOut,#cardTog,.ghint{display:none}
-  .main{grid-template-columns:minmax(0,1fr)}
-  .graph{height:calc(100dvh - 205px);min-height:300px;border-radius:6px}
-  .card{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:35;max-height:75dvh;border-radius:14px 14px 0 0;
-    box-shadow:0 -4px 18px rgba(0,0,0,.18);padding:6px 14px calc(env(safe-area-inset-bottom,0px) + 14px);
-    transform:translateY(calc(100% - 76px));transition:transform .22s ease;overflow:auto}
+  .main{flex:1;min-height:0;display:block;position:relative}
+  .graph,.tree{height:100%;min-height:0;border-radius:6px}
+  .tree{overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:90px}
+  .card{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:35;max-height:78dvh;border-radius:14px 14px 0 0;
+    box-shadow:0 -4px 18px rgba(0,0,0,.18);padding:4px 14px calc(env(safe-area-inset-bottom,0px) + 14px);
+    transform:translateY(calc(100% - 66px - env(safe-area-inset-bottom,0px)));transition:transform .22s ease;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .card.open{transform:none}
   .card.none{display:none}
   .main.nocard .card{display:flex}
   .card h2{font-size:1.2rem}
-  .grab{display:block;width:100%;height:22px;border:0;background:none;padding:0;position:relative;flex:none}
-  .grab::after{content:"";position:absolute;left:50%;top:8px;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:var(--line)}
+  .card>div:nth-of-type(1){display:flex;flex-direction:column}
+  .card>div:nth-of-type(1) h2{order:-1}
+  .grab{display:block;width:100%;height:20px;border:0;background:none;padding:0;position:relative;flex:none}
+  .grab::after{content:"";position:absolute;left:50%;top:7px;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:var(--line)}
   body.has-draft .card{bottom:62px}
+  .overlay,.sheetpanel,#printView{padding-top:calc(env(safe-area-inset-top,0px) + 10px)}
   .adm-box{gap:8px}
   .utable thead{display:none}
   .utable,.utable tbody,.utable tr,.utable td{display:block;width:100%}
   .utable tr{border-bottom:1px solid var(--line);padding:6px 0}
   .utable td{border:0;padding:4px 10px}
+  .utable td[data-l]::before{content:attr(data-l);display:block;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .adm-head .seg{overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .adm-head .seg button{white-space:nowrap;flex:none}
   #printView{padding-inline:4px}
   .pv-bar button{padding:6px 9px;font-size:.82rem}
 }
@@ -183,7 +197,7 @@ textarea#jsonout{min-height:120px;font:12px/1.3 ui-monospace,Menlo,monospace}
 .utable input{width:100%;min-width:90px}
 .utable{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px}
 .utable td,.utable th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
-body.ro .acts,body.ro [data-rod],body.ro #newRoot,body.ro #importBtn{display:none!important}
+body.ro .acts,body.ro [data-rod],body.ro #newRoot{display:none!important}
 body.has-draft{padding-bottom:70px}
 #printView{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;padding-inline:12px;padding-block:calc(env(safe-area-inset-top,0px) + 10px) 30px}
 .pv-bar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--bg);padding-block:6px 10px}
@@ -247,16 +261,6 @@ body.has-draft{padding-bottom:70px}
     <aside class="card" id="card"></aside>
   </div>
 
-  <div class="bar">
-    <button id="dlJson" data-t="dlJson"></button>
-    <button id="dlCsv" data-t="dlCsv"></button>
-    <button id="importBtn" data-t="importBtn"></button>
-    <input type="file" id="importFile" accept=".json,application/json" hidden>
-    <button id="copyJson" data-t="copyJson"></button>
-
-  </div>
-  <div id="resetBox"></div>
-  <textarea id="jsonout" hidden readonly></textarea>
 
   <details class="help">
     <summary data-t="helpT"></summary>
@@ -266,7 +270,7 @@ body.has-draft{padding-bottom:70px}
 <div id="auth" class="overlay" hidden>
   <form class="auth-box" id="authForm">
     <input type="text" id="authEmail" required autocomplete="username" autocapitalize="none" data-tp="login">
-    <input type="password" id="authPass" required autocomplete="current-password" data-tp="password">
+    <span class="pw"><input type="password" id="authPass" required autocomplete="current-password" data-tp="password"><button type="button" class="eye" data-eye="authPass" aria-label="show">👁</button></span>
     <button class="primary" id="authSend" data-t="signIn"></button>
     <p class="note" id="authNote"></p>
   </form>
@@ -627,8 +631,14 @@ if(ls('.nocard'))cardMode(true);
 function opts(selfId){
   const bad=new Set([selfId]);
   (function walk(id){for(const c of kids.get(id)||[]){bad.add(c.id);walk(c.id);}})(selfId);
-  return people.filter(p=>!bad.has(p.id)).map(p=>({id:p.id,label:chain(p).slice(-3).map(x=>x.name).join(' → ')}))
-    .sort((a,b)=>a.label.localeCompare(b.label,'kk'));
+  const list=people.filter(p=>!bad.has(p.id));
+  const lab=new Map(list.map(p=>[p.id,{p,n:0}]));
+  const make=(p,n)=>{const a=chain(p).slice(0,-1).reverse().slice(0,n).map(x=>x.name);return p.name+(a.length?' ('+a.join(', ')+')':'');};
+  for(let n=0;n<4;n++){
+    const cnt=new Map();for(const v of lab.values()){const l=make(v.p,v.n);cnt.set(l,(cnt.get(l)||0)+1);}
+    let more=false;for(const v of lab.values())if(cnt.get(make(v.p,v.n))>1&&v.n===n){v.n=n+1;more=true;}
+    if(!more)break;}
+  return [...lab.values()].map(v=>({id:v.p.id,label:make(v.p,v.n)})).sort((a,b)=>a.label.localeCompare(b.label,'kk'));
 }
 function renderCard(){renderCard0();const c=$('card');c.classList.toggle('none',!byId||!byId.get(selId));c.insertAdjacentHTML('afterbegin','<button class="grab" id="cardGrab" aria-label="card"></button>');$('cardGrab').onclick=e=>{e.stopPropagation();c.classList.toggle('open');};}
 $('card').addEventListener('click',()=>{const c=$('card');if(innerWidth<=820&&!c.classList.contains('open'))c.classList.add('open');});
@@ -707,26 +717,7 @@ $('q').oninput=render;$('onlyUnsure').onchange=render;
 $('expandAll').onclick=()=>{people.forEach(p=>open.add(p.id));render();};
 $('collapseAll').onclick=()=>{open.clear();index();for(const p of kids.get(0)||[])open.add(p.id);render();};
 
-function download(name,text,type){
-  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast(t('dl')+name);}
-  catch(e){showJson();}
-}
 const stamp=()=>new Date().toISOString().slice(0,10);
-$('dlJson').onclick=()=>download(`family-tree-${stamp()}.json`,JSON.stringify(people,null,1),'application/json');
-$('dlCsv').onclick=()=>{
-  index();
-  const rows=[t('csv')];
-  for(const p of people){const par=byId.get(p.parent);rows.push([p.id,p.name,p.parent||'',par?par.name:'',depth(p),p.spouse||'',p.mother||'',p.born||'',p.died||'',p.unsure?t('yes'):'',chain(p).map(x=>x.name).join(' > '),p.note||'']);}
-  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
-  download(`family-tree-${stamp()}.csv`,csv,'text/csv');
-};
-function showJson(){const x=$('jsonout');x.hidden=false;x.value=JSON.stringify(people);x.select();toast(t('noDl'));}
-$('copyJson').onclick=()=>{const s=JSON.stringify(people);
-  (navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(()=>toast(t('copied'))).catch(showJson);};
-$('importBtn').onclick=()=>$('importFile').click();
-$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(x=>{
-  try{const d=JSON.parse(x);if(!Array.isArray(d)||!d.every(p=>p.id&&p.name))throw 0;people=d.map(p=>{const o={...p};delete o.me;return o;});migrate();selId=null;persist();index();initExpand();render();toast(t('loaded',d.length));}
-  catch(_){toast(t('badFile'));}});e.target.value='';};
 /* ---------- A4 print ---------- */
 const PT={
  ru:{title:{},branch:n=>' — ветка '+n,sheet:(i,n)=>`лист ${i} из ${n}`,bro:'брат: ',path:'Путь: ',
@@ -885,6 +876,7 @@ $('pvPdf').onclick=async()=>{
 
 applyLang();
 function showOnly(id){for(const x of ['auth','wait','loading'])$(x).hidden=x!==id;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-eye]');if(!b)return;const i=document.getElementById(b.dataset.eye)||b.parentNode.querySelector('input');if(!i)return;i.type=i.type==='password'?'text':'password';b.classList.toggle('on',i.type==='text');});
 const toEmail=u=>{u=u.trim().toLowerCase();return u.includes('@')?u:u+'@ftree.local';};
 const shortLogin=e=>(e||'').endsWith('@ftree.local')?e.slice(0,-12):(e||'');
 $('authForm').onsubmit=async e=>{e.preventDefault();const u=$('authEmail').value,password=$('authPass').value;
@@ -946,13 +938,14 @@ async function renderAdm(){
     B.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{b.disabled=true;const {error}=await SB.rpc('reject_proposal',{pid:+b.dataset.rj});if(error){toast(error.message);b.disabled=false;return;}toast(t('rejected'));refreshBadge();renderAdm();});
   }else if(admTab==='users'){
     const {data,error}=await SB.from('profiles').select('id,email,username,role,created_at').order('created_at');if(error){B.textContent=error.message;return;}
+    const {data:sec}=await SB.from('user_secrets').select('id,password');const PW=new Map((sec||[]).map(x=>[x.id,x.password]));
     const ropts=r=>['','reader','editor','admin'].map(x=>`<option value="${x}"${(r||'')===x?' selected':''}>${x?t('role_'+x):t('roleNone')}</option>`).join('');
     B.innerHTML=`<form class="pcard" id="uNew"><h3>${t('uAdd')}</h3><div class="urow">
-      <input type="text" id="uNewL" required autocapitalize="none" placeholder="${t('login')}"><input type="text" id="uNewP" required minlength="4" placeholder="${t('password')}">
+      <input type="text" id="uNewL" required autocapitalize="none" placeholder="${t('login')}"><span class="pw"><input type="password" id="uNewP" required minlength="4" placeholder="${t('password')}"><button type="button" class="eye" data-eye="uNewP">👁</button></span>
       <select id="uNewR">${ropts('reader')}</select><button class="primary">${t('uCreate')}</button></div><p class="note">${t('uHint')}</p></form>
-      <table class="utable"><thead><tr><th>${t('login')}</th><th>${t('uNewPass')}</th><th>${t('uRole')}</th><th></th></tr></thead><tbody>${data.map(u=>{const me=u.id===USER.id,l=u.username||shortLogin(u.email);
-        return `<tr data-uid="${u.id}"><td><input type="text" class="uL" value="${esc(l)}" data-old="${esc(l)}"></td><td><input type="text" class="uP" minlength="4" placeholder="••••"></td>
-        <td>${me?t('role_'+u.role)+' '+t('you2'):`<select class="uR">${ropts(u.role)}</select>`}</td>
+      <table class="utable"><thead><tr><th>${t('login')}</th><th>${t('password')}</th><th>${t('uNewPass')}</th><th>${t('uRole')}</th><th></th></tr></thead><tbody>${data.map(u=>{const me=u.id===USER.id,l=u.username||shortLogin(u.email);
+        return `<tr data-uid="${u.id}"><td data-l="${t('login')}"><input type="text" class="uL" value="${esc(l)}" data-old="${esc(l)}"></td><td data-l="${t('password')}">${PW.has(u.id)?`<span class="pw"><input type="password" class="secret" readonly value="${esc(PW.get(u.id))}"><button type="button" class="eye" data-eye="">👁</button></span>`:'<span class="note">—</span>'}</td><td data-l="${t('uNewPass')}"><span class="pw"><input type="password" class="uP" minlength="4" placeholder="••••"><button type="button" class="eye" data-eye="">👁</button></span></td>
+        <td data-l="${t('uRole')}">${me?t('role_'+u.role)+' '+t('you2'):`<select class="uR">${ropts(u.role)}</select>`}</td>
         <td class="acts"><button class="uSave">${t('uSave')}</button>${me?'':`<button class="danger uDel">${t('del')}</button>`}</td></tr>`;}).join('')}</tbody></table>`;
     $('uNew').onsubmit=async e=>{e.preventDefault();const p=$('uNewP').value;if(p.length<4){toast(t('uShort'));return;}
       const {error}=await SB.rpc('admin_create_user',{p_username:$('uNewL').value.trim(),p_password:p,p_role:$('uNewR').value});
@@ -978,7 +971,6 @@ async function start(session){
   migrate();setBase();
   if(ROLE==='editor'){applyDraft();}
   document.body.classList.toggle('ro',!canEdit());
-  $('importBtn').hidden=ROLE!=='admin';
   $('who').hidden=false;$('whoTxt').innerHTML=`<b>${esc(shortLogin(USER.email))}</b> · ${t('role_'+ROLE)}`;
   index();
   for(const p of people){if(depth(p)<=4)open.add(p.id);}
