@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Family Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&display=swap">
+<style>
+/* layout: full-width expandable tree canvas with a person card on the right */
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --ink:#1b2433; --muted:#5d6878; --line:#d6dbe3;
+  --accent:#1f4e8c; --accent-soft:#e3ebf6; --ochre:#b7791f; --ochre-soft:#fbf0dc; --danger:#b42318;
+  --display:"PT Serif",Georgia,"Times New Roman",serif;
+  --body:"PT Sans","Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11161f; --panel:#18202c; --ink:#e6eaf0; --muted:#98a3b3; --line:#2c3746;
+  --accent:#7fb0f0; --accent-soft:#1d2d44; --ochre:#e0a94a; --ochre-soft:#33280f; --danger:#f97066; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161f; --panel:#18202c; --ink:#e6eaf0; --muted:#98a3b3; --line:#2c3746;
+  --accent:#7fb0f0; --accent-soft:#1d2d44; --ochre:#e0a94a; --ochre-soft:#33280f; --danger:#f97066; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);margin:0}
+.wrap{padding-inline:8px;padding-block:10px 24px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.hright{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.sub{color:var(--muted);font-size:.9rem;margin-top:4px}
+.stats{display:flex;gap:14px;color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink);font-size:1rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input[type=search],input[type=text],input[type=email],input[type=password],textarea,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+input[type=search]{flex:1 1 220px}
+textarea{width:100%;min-height:80px;resize:vertical}
+button{font:inherit;font-size:.9rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+button.danger{color:var(--danger)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.9rem;color:var(--muted)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:10px;align-items:start}
+.main.nocard{grid-template-columns:minmax(0,1fr)}
+.main.nocard .card{display:none}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 4px;overflow-x:auto;min-height:300px}
+ul.t{list-style:none;margin:0;padding-left:18px;border-left:1px dashed var(--line);margin-left:9px}
+.tree>ul.t{border-left:0;padding-left:4px;margin-left:0}
+.row{display:flex;align-items:baseline;gap:6px;padding:2px 6px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.row:hover{background:var(--accent-soft)}
+.row.sel{background:var(--accent);color:var(--panel)}
+.row.sel .gen,.row.sel .cnt{color:var(--panel)}
+.tog{width:16px;flex:none;color:var(--muted);font-size:.75rem;text-align:center;user-select:none}
+.nm{font-weight:700}
+.unsure .nm{font-weight:400;font-style:italic}
+.q{display:inline-block;font:700 .7rem/1 var(--body);color:var(--ochre);background:var(--ochre-soft);border-radius:3px;padding:2px 4px;margin-left:2px}
+.gen,.cnt{color:var(--muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+.hit .nm{background:var(--ochre-soft);color:var(--ink);border-radius:3px;padding:0 2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto}
+.card h2{font:700 1.4rem/1.15 var(--display);margin:0}
+.path{font-size:.82rem;color:var(--muted);line-height:1.5}
+.path a{color:var(--accent);cursor:pointer;text-decoration:none}
+.path a:hover{text-decoration:underline}
+.f{display:flex;flex-direction:column;gap:4px}
+.f>span{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.f input,.f select{width:100%}
+.kids{display:flex;flex-wrap:wrap;gap:6px}
+.kids a{font-size:.88rem;background:var(--accent-soft);color:var(--ink);border-radius:4px;padding:3px 8px;cursor:pointer}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.confirm{background:var(--ochre-soft);border-radius:6px;padding:10px;font-size:.9rem;display:flex;flex-direction:column;gap:8px}
+.note{font-size:.85rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem}
+.empty{color:var(--muted);font-size:.9rem}
+details.help{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:.9rem}
+details.help summary{cursor:pointer;font-weight:700}
+details.help p{margin:.5em 0;max-width:70ch}
+textarea#jsonout{min-height:120px;font:12px/1.3 ui-monospace,Menlo,monospace}
+.trees{display:flex;flex-wrap:wrap;gap:4px 22px}
+.trees button{border:0;background:none;padding:0 0 4px;font:700 1.6rem/1.15 var(--display);color:var(--muted);border-bottom:3px solid transparent;border-radius:0}
+.trees button:hover{color:var(--ink)}
+.trees button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ochre)}
+.notice{background:var(--ochre-soft);border-radius:8px;padding:10px 14px;font-size:.9rem;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.seg button[aria-selected="true"]{background:var(--accent);color:var(--panel)}
+.lang button{font-size:.8rem;padding:4px 10px;letter-spacing:.05em}
+.gctl,.lctl{display:contents}
+.gsearch{position:relative;display:inline-flex;flex:0 1 240px;min-width:0}
+.gsearch input{width:100%}
+.gq-res{position:absolute;top:calc(100% + 4px);left:0;z-index:20;min-width:100%;width:max-content;max-width:min(420px,90vw);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:4px}
+.gq-res a{display:block;padding:6px 8px;border-radius:4px;cursor:pointer;color:var(--ink)}
+.gq-res a:hover,.gq-res a.on{background:var(--accent-soft)}
+.gq-res small{color:var(--muted);margin-left:6px}
+.gq-res .empty{padding:6px 8px}
+.graph{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;height:calc(100vh - 150px);min-height:420px;overflow:hidden;touch-action:none;cursor:grab}
+.graph.drag{cursor:grabbing}
+.graph svg{width:100%;height:100%;display:block}
+.ghint{position:absolute;left:10px;bottom:8px;font-size:.75rem;color:var(--muted);pointer-events:none}
+.edge{fill:none;stroke:var(--muted);stroke-width:1.3}
+.edge.me{stroke:var(--ochre);stroke-width:2.6}
+.arrhead{fill:var(--muted)}.arrhead.me{fill:var(--ochre)}
+.node{cursor:pointer}
+.node rect.box{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+.node.unsure rect.box{stroke-dasharray:4 3}
+.node.line rect.box{stroke:var(--ochre);stroke-width:2.4}
+.node.me rect.box{fill:var(--ochre-soft);stroke:var(--ochre);stroke-width:2.6}
+.node.sel rect.box{stroke:var(--accent);stroke-width:3}
+.node .n1{font:700 13px var(--body);fill:var(--ink)}
+.node.unsure .n1{font-style:italic;font-weight:400}
+.node .n2{font:11px var(--body);fill:var(--muted)}
+.node .tg{fill:var(--accent)}
+.node .tg.open{fill:var(--panel);stroke:var(--accent);stroke-width:1.4}
+.node .tgt{font:700 10px var(--body);fill:var(--panel)}
+.node .tg.open+.tgt{fill:var(--accent)}
+.wife{fill:var(--ochre-soft);stroke:var(--ochre);stroke-width:1}
+.wife-t{font:11px var(--body);fill:var(--ink)}
+.node:focus-visible rect.box{stroke:var(--accent);stroke-width:3}
+.lnk{color:var(--accent);cursor:pointer;text-decoration:underline}
+.me-tag{color:var(--ochre);font-weight:700;font-size:.8rem}
+@media (max-width:820px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .card{position:static;max-height:none}
+  .hright{align-items:flex-start}
+}
+.overlay{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.overlay[hidden]{display:none!important}
+.auth-box{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.auth-h{font:700 1.8rem/1.1 var(--display);margin:0}
+.who{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);flex-wrap:wrap;justify-content:flex-end}
+.who b{color:var(--ink)}
+.who button{font-size:.8rem;padding:4px 10px}
+.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--danger);color:#fff;font-size:.72rem;font-weight:700;margin-left:4px}
+#draftBar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--ochre-soft);border-top:1px solid var(--ochre);padding-inline:12px;padding-block:10px calc(env(safe-area-inset-bottom,0px) + 10px)}
+#draftBar[hidden]{display:none!important}
+#draftBar input{flex:1 1 200px}
+#draftTxt{font-weight:700}
+.sheetpanel{align-items:flex-start}
+.adm-box{width:min(960px,100%);display:flex;flex-direction:column;gap:12px}
+.adm-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);padding-block:4px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.pcard h3{margin:0;font-size:1rem}
+.pmeta{font-size:.82rem;color:var(--muted)}
+.chg{border-left:3px solid var(--line);padding-left:10px;font-size:.88rem}
+.chg.add{border-color:#2f8f4e}.chg.del{border-color:var(--danger)}.chg.mod{border-color:var(--accent)}
+.chg .k{color:var(--muted)}
+.chg del{color:var(--danger)}.chg ins{color:#2f8f4e;text-decoration:none;font-weight:700}
+.st{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:9px;background:var(--accent-soft)}
+.st.approved{background:#dcf2e3;color:#1d6b38}.st.rejected{background:#fbe0dd;color:var(--danger)}
+.utable{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.utable td,.utable th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
+body.ro .acts,body.ro [data-rod],body.ro #newRoot,body.ro #importBtn{display:none!important}
+body.has-draft{padding-bottom:70px}
+#printView{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;padding-inline:12px;padding-block:calc(env(safe-area-inset-top,0px) + 10px) 30px}
+.pv-bar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--bg);padding-block:6px 10px}
+.pv-hint{font-size:.8rem;color:var(--muted);flex:1 1 260px}
+.sheet{width:min(100%,1120px);margin:0 auto 14px;box-shadow:0 1px 4px rgba(0,0,0,.25);background:#fff}
+.sheet svg{display:block;width:100%;height:auto}
+@page{size:A4 landscape;margin:0}
+@media print{
+  body>*:not(#printView){display:none!important}
+  #printView{position:static;padding:0;overflow:visible;background:#fff}
+  .pv-bar{display:none!important}
+  .sheet{width:297mm;height:210mm;margin:0;box-shadow:none;break-after:page;page-break-after:always}
+  .sheet svg{width:297mm;height:210mm}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="trees" role="tablist"><button id="tSh" role="tab" data-t="treeSh"></button><button id="tMe" role="tab" data-t="treeMe"></button></div>
+      <div class="sub" id="tsub"></div>
+    </div>
+    <div class="hright">
+      <div class="who" id="who" hidden><span id="whoTxt"></span><button id="admBtn" hidden></button><button id="logout" data-t="logout"></button></div>
+      <div class="seg lang" role="tablist"><button id="lKk" role="tab">ҚАЗ</button><button id="lRu" role="tab">РУС</button></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+  <div class="bar">
+    <div class="seg" role="tablist">
+      <button id="vGraph" role="tab" data-t="vGraph"></button><button id="vList" role="tab" data-t="vList"></button>
+    </div>
+    <button id="toMe" data-t="toMe"></button>
+    <span class="gctl" id="gctl">
+      <div class="seg" role="tablist">
+        <button id="oV" role="tab" data-t="oV"></button><button id="oH" role="tab" data-t="oH"></button>
+      </div>
+      <span class="gsearch"><input type="search" id="gq" data-tp="gSearchPh" autocomplete="off"><div class="gq-res" id="gqRes" hidden></div></span>
+      <button id="gExp" data-t="expandAll"></button>
+      <button id="gCol" data-t="collapse"></button>
+      <button id="zIn" data-ta="zIn">+</button><button id="zOut" data-ta="zOut">−</button>
+      <button id="zFit" data-t="fit"></button>
+      <button id="cardTog"></button>
+    </span>
+    <span class="lctl" id="lctl">
+      <input type="search" id="q" data-tp="searchPh">
+      <label class="chk"><input type="checkbox" id="onlyUnsure"> <span data-t="onlyUnsure"></span></label>
+      <button id="expandAll" data-t="expandAll"></button>
+      <button id="collapseAll" data-t="collapse"></button>
+    </span>
+    <button id="newRoot" data-t="newRoot"></button>
+    <button id="printBtn" data-t="printBtn"></button>
+  </div>
+
+  <div class="main">
+    <div class="tree" id="tree"></div>
+    <div class="graph" id="graph"><svg id="gsvg" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrhead"/></marker><marker id="arrMe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrhead me"/></marker></defs><g id="vp"></g></svg><div class="ghint" data-t="hint"></div></div>
+    <aside class="card" id="card"></aside>
+  </div>
+
+  <div class="bar">
+    <button id="dlJson" data-t="dlJson"></button>
+    <button id="dlCsv" data-t="dlCsv"></button>
+    <button id="importBtn" data-t="importBtn"></button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <button id="copyJson" data-t="copyJson"></button>
+
+  </div>
+  <div id="resetBox"></div>
+  <textarea id="jsonout" hidden readonly></textarea>
+
+  <details class="help">
+    <summary data-t="helpT"></summary>
+    <p data-t="help1"></p><p data-t="help2"></p><p data-t="help3"></p><p data-t="help4"></p><p data-t="help5"></p><p data-t="help6"></p>
+  </details>
+</div>
+<div id="auth" class="overlay" hidden>
+  <form class="auth-box" id="authForm">
+    <div class="seg lang"><button type="button" class="lsw" data-l="kk">ҚАЗ</button><button type="button" class="lsw" data-l="ru">РУС</button></div>
+    <h1 class="auth-h">Family Tree</h1>
+    <p id="authMsg" data-t="authIntro"></p>
+    <label class="f"><span data-t="email"></span><input type="email" id="authEmail" required autocomplete="username"></label>
+    <label class="f"><span data-t="password"></span><input type="password" id="authPass" required minlength="6" autocomplete="current-password"></label>
+    <div class="acts"><button class="primary" id="authSend" data-t="signIn"></button><button type="button" id="authUp" data-t="signUp"></button></div>
+    <p class="note" id="authNote"></p>
+  </form>
+</div>
+<div id="wait" class="overlay" hidden>
+  <div class="auth-box"><h1 class="auth-h">Family Tree</h1><p data-t="waitRole"></p><p class="note" id="waitMail"></p><button id="logout2" data-t="logout"></button></div>
+</div>
+<div id="draftBar" hidden>
+  <span id="draftTxt"></span>
+  <input type="text" id="draftComment" data-tp="draftCommentPh">
+  <button class="primary" id="draftSend" data-t="draftSend"></button>
+  <button id="draftShow" data-t="draftShow"></button>
+  <button id="draftDrop" data-t="draftDrop"></button>
+</div>
+<div id="adm" class="overlay sheetpanel" hidden>
+  <div class="adm-box">
+    <div class="adm-head">
+      <div class="seg" role="tablist"><button id="aProp" role="tab" data-t="aProp"></button><button id="aMine" role="tab" data-t="aMine"></button><button id="aUsers" role="tab" data-t="aUsers"></button><button id="aHist" role="tab" data-t="aHist"></button></div>
+      <button id="admClose" data-t="close"></button>
+    </div>
+    <div id="admBody"></div>
+  </div>
+</div>
+<div id="loading" class="overlay"><div class="auth-box"><p data-t="loading"></p></div></div>
+<div id="printView" hidden>
+  <div class="pv-bar">
+    <div class="seg" role="tablist"><button id="pvKk" role="tab">ҚАЗ</button><button id="pvRu" role="tab">РУС</button></div>
+    <button class="primary" id="pvPrint" data-t="doPrint"></button>
+    <button id="pvPdf" data-t="savePdf"></button>
+    <button id="pvClose" data-t="close"></button>
+    <span class="pv-hint" data-t="printHint"></span>
+  </div>
+  <div id="pvPages"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+const I18N={
+ru:{authIntro:'Вход только для родственников. Впервые здесь — введите почту, придумайте пароль и нажмите «Создать аккаунт». Затем админ откроет вам доступ.',email:'Почта',password:'Пароль (не меньше 6 символов)',signIn:'Войти',signUp:'Создать аккаунт',authNeed:'Введите почту и пароль (не меньше 6 символов).',confirmOff:'Аккаунт создан, но вход не выполнен: в Supabase нужно выключить подтверждение почты.',authErr:'Не получилось: ',
+ waitRole:'Вы вошли, но доступ ещё не выдан. Попросите администратора открыть вам доступ.',logout:'Выйти',loading:'Загрузка…',loadErr:'Не удалось загрузить данные: ',
+ role_admin:'админ',role_editor:'редактор',role_reader:'читатель',admin:'Управление',
+ draftN:n=>`Ваши изменения: ${n}`,draftCommentPh:'Комментарий для админа (необязательно)',draftSend:'Отправить на проверку',draftShow:'Посмотреть',draftDrop:'Отменить всё',
+ draftSent:'Отправлено на проверку',draftDropped:'Изменения отменены',dropQ:'Отменить все неотправленные изменения?',
+ saved:'Сохранено',saveErr:'Не сохранилось: ',aProp:'Предложения',aMine:'Мои предложения',aUsers:'Пользователи',aHist:'История',
+ approve:'Принять',reject:'Отклонить',approved:'Принято',rejected:'Отклонено',pending:'на проверке',noProps:'Предложений нет.',
+ chAdd:'новый',chDel:'удалён',chMod:'изменён',fParent:'отец/мать',fName:'имя',fSpouse:'жена/муж',fMother:'мать',fNote:'заметка',fBorn:'родился',fDied:'умер',fUnsure:'не проверено',fTree:'древо',
+ roleNone:'— нет доступа —',you2:'(вы)',users:'Пользователи появляются здесь после первого входа на сайт.',histEmpty:'Пока пусто.',
+ by:'кто',when:'когда',printBtn:'Печать A4',doPrint:'Печать',savePdf:'Сохранить PDF',pdfMaking:'Готовлю PDF…',pdfFail:'Не удалось сделать PDF: для этого нужен интернет',gSearchPh:'Найти человека…',close:'Закрыть',printHint:'A4 альбомно, масштаб 100%. Внутри Claude печать и скачивание не работают — откройте сохранённый файл в обычном браузере.',treeSh:'Древо 1',treeMe:'Древо 2',subSh:'',subMe:'',
+ people:'чел.',gens:'поколений',unsure:'не проверено',vGraph:'Схема',vList:'Список',toMe:'★ Моя ветка',newRoot:'+ Новый род',
+ oV:'Вертикально',oH:'Горизонтально',expandAll:'Раскрыть всё',collapse:'Свернуть',zIn:'Приблизить',zOut:'Отдалить',fit:'Вписать',
+ cardHide:'Скрыть карточку',cardShow:'Показать карточку',searchPh:'Поиск по имени или заметке',onlyUnsure:'только непроверенные',
+ hint:'Тяните, чтобы двигать · колесо или +/− — масштаб · нажмите на человека, чтобы открыть или закрыть его детей',
+ selectPerson:'Выберите человека в дереве.',saveHtml:'Сохранить файл с изменениями',dlJson:'Скачать JSON',dlCsv:'Скачать для Excel (CSV)',
+ importBtn:'Загрузить JSON',copyJson:'Скопировать данные',reset:'Сбросить правки',helpT:'Как с этим работать',
+ help1:'«?» и пунктирная рамка — имя или связь прочитаны с фото неуверенно. Проверьте по оригиналу и снимите галочку «не проверено».',
+ help2:'Нажмите на человека на схеме — откроются или закроются его дети, а справа появится карточка. Кнопка «+N» на рамке — сколько потомков скрыто.',
+ help3:'«Вертикально» — поколения сверху вниз, «Горизонтально» — слева направо. Ваша линия выделена жёлтым.',
+ help4:'Админ сохраняет правки сразу. Правки редактора уходят админу на проверку кнопкой «Отправить на проверку» внизу экрана.',
+ help5:'Несколько жён: впишите их через запятую, а у каждого ребёнка выберите «Мать» — на схеме дети сгруппируются по матерям.',
+ help6:'Чтобы перенести человека в другую ветку, выберите его и поменяйте поле «Отец / мать».',
+ notFound:'Ничего не найдено.',you:'★ вы',youNode:'★ это вы',from:'от',motherUnknown:'мать не указана',root:'Корень дерева',
+ gen:(n,m)=>`${n}-е поколение от вершины · потомков: ${m}`,spouseLink:'Супруг',fName:'Имя',born:'Годы рождения',died:'Годы смерти',bornPh:'напр. 1932',
+ spouseF:'Жена / муж — если несколько, через запятую',spousePh:'напр. Айгүл, Динара',herRod:'её род →',addHerRod:'+ её род',
+ motherF:x=>`Мать (жена ${x})`,notSet:'— не указана —',parentF:'Отец / мать',topNone:'— вершина (без родителя) —',
+ noteF:'Заметки, истории, откуда известно',unsureChk:'не проверено (прочитано с фото неуверенно)',meChk:'это я (ветка подсвечивается)',
+ kidsF:'Дети',none:'нет',addChild:'+ Ребёнок',addPar:'+ Отец',addSib:'+ Брат / сестра',del:'Удалить',
+ delQ:(n,k)=>`Удалить «${n}»${k?` и всех потомков (${k})`:''}?`,delYes:'Да, удалить',cancel:'Отмена',moved:'Перенесено',deleted:'Удалено',
+ newPerson:'Новый человек',fatherOf:'Отец: ',rodCreated:'Создан отдельный род — добавьте её отца через «+ Отец»',
+ spouseNote:n=>`Супруг(а): ${n}. Добавляйте её отца кнопкой «+ Отец»`,markMe:'Отметьте себя в карточке: «это я»',
+ dl:'Файл скачивается: ',noDl:'Скачивание недоступно здесь — данные выделены, скопируйте их',copied:'Данные скопированы',
+ loaded:n=>`Загружено: ${n} чел.`,badFile:'Не похоже на файл древа (нужен JSON со списком людей)',
+ resetQ:'Вернуть данные к тем, что записаны в файле? Правки в этом браузере пропадут.',resetYes:'Сбросить',resetDone:'Сброшено',
+ notice:'Загружена новая версия данных от Claude. Ваши прежние правки из этого браузера сохранены отдельно.',
+ restore:'Вернуть мои правки вместо новой версии',restored:'Ваши правки возвращены',noName:'Без имени',
+ csv:['id','Имя','Родитель id','Родитель','Поколение','Жена/муж','Мать','Родился','Умер','Не проверено','Путь','Заметки'],yes:'да'},
+kk:{authIntro:'Кіру тек туыстарға арналған. Алғаш рет болсаңыз — поштаңызды жазып, құпиясөз ойлап, «Аккаунт ашу» батырмасын басыңыз. Содан кейін әкімші рұқсат береді.',email:'Пошта',password:'Құпиясөз (кемінде 6 таңба)',signIn:'Кіру',signUp:'Аккаунт ашу',authNeed:'Пошта мен құпиясөзді жазыңыз (кемінде 6 таңба).',confirmOff:'Аккаунт ашылды, бірақ кіру орындалмады: Supabase-те поштаны растауды өшіру керек.',authErr:'Болмады: ',
+ waitRole:'Сіз кірдіңіз, бірақ рұқсат әлі берілмеген. Әкімшіден рұқсат сұраңыз.',logout:'Шығу',loading:'Жүктелуде…',loadErr:'Деректер жүктелмеді: ',
+ role_admin:'әкімші',role_editor:'редактор',role_reader:'оқырман',admin:'Басқару',
+ draftN:n=>`Сіздің өзгерістеріңіз: ${n}`,draftCommentPh:'Әкімшіге түсініктеме (міндетті емес)',draftSend:'Тексеруге жіберу',draftShow:'Қарау',draftDrop:'Бәрін болдырмау',
+ draftSent:'Тексеруге жіберілді',draftDropped:'Өзгерістер болдырылмады',dropQ:'Жіберілмеген барлық өзгерістерді болдырмау керек пе?',
+ saved:'Сақталды',saveErr:'Сақталмады: ',aProp:'Ұсыныстар',aMine:'Менің ұсыныстарым',aUsers:'Қолданушылар',aHist:'Тарих',
+ approve:'Қабылдау',reject:'Қабылдамау',approved:'Қабылданды',rejected:'Қабылданбады',pending:'тексерілуде',noProps:'Ұсыныстар жоқ.',
+ chAdd:'жаңа',chDel:'жойылды',chMod:'өзгертілді',fParent:'әкесі/анасы',fName:'есімі',fSpouse:'жұбайы',fMother:'анасы',fNote:'жазба',fBorn:'туған',fDied:'қайтыс болған',fUnsure:'тексерілмеген',fTree:'ағаш',
+ roleNone:'— рұқсат жоқ —',you2:'(сіз)',users:'Қолданушылар сайтқа алғаш кіргеннен кейін осында шығады.',histEmpty:'Әзірге бос.',
+ by:'кім',when:'қашан',printBtn:'А4 басып шығару',doPrint:'Басып шығару',savePdf:'PDF сақтау',pdfMaking:'PDF дайындалуда…',pdfFail:'PDF жасалмады: ол үшін интернет керек',gSearchPh:'Адамды іздеу…',close:'Жабу',printHint:'А4 көлденең, масштаб 100%. Claude ішінде басып шығару мен жүктеу жұмыс істемейді — сақталған файлды кәдімгі браузерде ашыңыз.',treeSh:'1-ағаш',treeMe:'2-ағаш',subSh:'',subMe:'',
+ people:'адам',gens:'буын',unsure:'тексерілмеген',vGraph:'Сызба',vList:'Тізім',toMe:'★ Менің тармағым',newRoot:'+ Жаңа ру',
+ oV:'Тігінен',oH:'Көлденең',expandAll:'Бәрін ашу',collapse:'Жию',zIn:'Үлкейту',zOut:'Кішірейту',fit:'Толық көрсету',
+ cardHide:'Карточканы жасыру',cardShow:'Карточканы көрсету',searchPh:'Есім не жазба бойынша іздеу',onlyUnsure:'тек тексерілмегендер',
+ hint:'Жылжыту үшін тартыңыз · дөңгелек не +/− — масштаб · адамды бассаңыз, балалары ашылады не жабылады',
+ selectPerson:'Ағаштан адамды таңдаңыз.',saveHtml:'Өзгерістерімен файлды сақтау',dlJson:'JSON жүктеу',dlCsv:'Excel үшін жүктеу (CSV)',
+ importBtn:'JSON ашу',copyJson:'Деректерді көшіру',reset:'Түзетулерді болдырмау',helpT:'Қалай пайдалану керек',
+ help1:'«?» және үзік жиек — есім не байланыс суреттен анық оқылмаған. Түпнұсқамен салыстырып, «тексерілмеген» белгісін алып тастаңыз.',
+ help2:'Сызбадағы адамды бассаңыз, балалары ашылады не жабылады, ал оң жақта карточкасы шығады. Жиектегі «+N» — қанша ұрпақ жасырулы екенін көрсетеді.',
+ help3:'«Тігінен» — буындар жоғарыдан төменге, «Көлденең» — солдан оңға. Сіздің тармағыңыз сарымен ерекшеленген.',
+ help4:'Әкімшінің түзетулері бірден сақталады. Редактордың түзетулері экранның төменгі жағындағы «Тексеруге жіберу» батырмасымен әкімшіге тексеруге жіберіледі.',
+ help5:'Бірнеше әйел болса, үтір арқылы жазыңыз, ал әр баланың «Анасы» өрісін таңдаңыз — сызбада балалар аналары бойынша топталады.',
+ help6:'Адамды басқа тармаққа ауыстыру үшін оны таңдап, «Әкесі / анасы» өрісін өзгертіңіз.',
+ notFound:'Ештеңе табылмады.',you:'★ сіз',youNode:'★ бұл сіз',from:'анасы',motherUnknown:'анасы көрсетілмеген',root:'Ағаштың басы',
+ gen:(n,m)=>`Басынан ${n}-буын · ұрпағы: ${m}`,spouseLink:'Жұбайы',fName:'Есімі',born:'Туған жылы',died:'Қайтыс болған жылы',bornPh:'мыс. 1932',
+ spouseF:'Әйелі / күйеуі — бірнешеу болса, үтір арқылы',spousePh:'мыс. Айгүл, Динара',herRod:'оның руы →',addHerRod:'+ оның руы',
+ motherF:x=>`Анасы (${x} әйелі)`,notSet:'— көрсетілмеген —',parentF:'Әкесі / анасы',topNone:'— басы (ата-анасыз) —',
+ noteF:'Жазбалар, әңгімелер, дереккөз',unsureChk:'тексерілмеген (суреттен анық оқылмаған)',meChk:'бұл мен (тармағым ерекшеленеді)',
+ kidsF:'Балалары',none:'жоқ',addChild:'+ Бала',addPar:'+ Әкесі',addSib:'+ Бауыры',del:'Жою',
+ delQ:(n,k)=>`«${n}»${k?` және оның ${k} ұрпағы`:''} жойылсын ба?`,delYes:'Иә, жою',cancel:'Болдырмау',moved:'Ауыстырылды',deleted:'Жойылды',
+ newPerson:'Жаңа адам',fatherOf:'Әкесі: ',rodCreated:'Жеке ру құрылды — әкесін «+ Әкесі» арқылы қосыңыз',
+ spouseNote:n=>`Жұбайы: ${n}. Әкесін «+ Әкесі» батырмасымен қосыңыз`,markMe:'Карточкада «бұл мен» деп белгілеңіз',
+ dl:'Файл жүктелуде: ',noDl:'Мұнда жүктеу мүмкін емес — деректер белгіленді, көшіріп алыңыз',copied:'Деректер көшірілді',
+ loaded:n=>`Жүктелді: ${n} адам`,badFile:'Бұл ағаш файлы емес сияқты (адамдар тізімі бар JSON керек)',
+ resetQ:'Файлдағы деректерге қайтару керек пе? Осы браузердегі түзетулер өшеді.',resetYes:'Қайтару',resetDone:'Қайтарылды',
+ notice:'Claude-тан деректердің жаңа нұсқасы жүктелді. Осы браузердегі бұрынғы түзетулеріңіз бөлек сақталды.',
+ restore:'Жаңа нұсқаның орнына менің түзетулерімді қайтару',restored:'Түзетулеріңіз қайтарылды',noName:'Есімсіз',
+ csv:['id','Есімі','Ата-ана id','Ата-анасы','Буын','Жұбайы','Анасы','Туған','Қайтыс болған','Тексерілмеген','Жолы','Жазбалар'],yes:'иә'}};
+const KEY='ft.v2';
+const $=id=>document.getElementById(id);
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(KEY+k);localStorage.setItem(KEY+k,v);}catch(e){return null;}}
+let lang=ls('.lang')==='kk'?'kk':'ru';
+const t=(k,...a)=>{const v=I18N[lang][k];return typeof v==='function'?v(...a):v;};
+let people, open=new Set(), gexp=new Set(), selId=null, view='graph', orient=ls('.orient')==='h'?'h':'v', zoom=1, tx=0, ty=0;
+const SB=(window.FTREE&&window.supabase)?window.supabase.createClient(window.FTREE.url,window.FTREE.anonKey):null;
+let USER=null,ROLE=null,ME=null,base=new Map(),saveT=null;
+const DRAFT_KEY=()=>'ft.draft.'+(USER?USER.id:'');
+const strip=p=>{const o={...p};delete o.id;delete o.me;return o;};
+const canEdit=()=>ROLE==='admin'||ROLE==='editor';
+function setBase(){base=new Map(people.map(p=>[p.id,JSON.stringify(strip(p))]));}
+function diff(){
+  const cur=new Map(people.map(p=>[p.id,JSON.stringify(strip(p))])),ch=[];
+  for(const [id,v] of cur)if(base.get(id)!==v)ch.push({id,before:base.has(id)?JSON.parse(base.get(id)):null,after:JSON.parse(v)});
+  for(const [id,v] of base)if(!cur.has(id))ch.push({id,before:JSON.parse(v),after:null});
+  return ch;}
+let TREECFG={};
+async function loadSettings(){
+  const {data}=await SB.from('settings').select('key,value');
+  for(const r of data||[])if(r.key==='trees'){TREECFG=r.value||{};
+    for(const l of ['ru','kk']){const n=k=>((TREECFG[k]||{}).name||{})[l],u=k=>((TREECFG[k]||{}).sub||{})[l];
+      if(n('sh'))I18N[l].treeSh=n('sh');if(n('me'))I18N[l].treeMe=n('me');I18N[l].subSh=u('sh')||'';I18N[l].subMe=u('me')||'';}}
+  applyLang();}
+async function fetchPeople(){
+  const out=[];for(let from=0;;from+=1000){const {data,error}=await SB.from('people').select('id,data').order('id').range(from,from+999);if(error)throw error;out.push(...data);if(data.length<1000)break;}
+  return out.map(r=>({...r.data,id:Number(r.id)}));}
+let cur='me';
+function migrate(){
+  const c=ls('.tree');if(c==='sh'||c==='me')cur=c;
+}
+function treeOf(p){const c=chain(p);return c[0].tree||'sh';}
+function persist(){
+  if(ROLE==='admin'){clearTimeout(saveT);saveT=setTimeout(pushAdmin,700);}
+  else if(ROLE==='editor'){const ch=diff();try{localStorage.setItem(DRAFT_KEY(),JSON.stringify(ch.map(c=>({id:c.id,after:c.after}))));}catch(e){}draftUI(ch.length);}
+}
+async function pushAdmin(){
+  const ch=diff();if(!ch.length)return;
+  const {error}=await SB.rpc('admin_apply',{changes:ch});
+  if(error){toast(t('saveErr')+error.message);return;}
+  for(const c of ch){if(c.after)base.set(c.id,JSON.stringify(c.after));else base.delete(c.id);}
+  toast(t('saved'));}
+function draftUI(n){$('draftBar').hidden=!n;document.body.classList.toggle('has-draft',!!n);$('draftTxt').textContent=t('draftN',n);}
+function applyDraft(){
+  let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY())||'null');}catch(e){}
+  if(!Array.isArray(d))return;
+  const m=new Map(people.map(p=>[p.id,p]));
+  for(const c of d){if(c.after)m.set(c.id,{...c.after,id:c.id});else m.delete(c.id);}
+  people=[...m.values()];}
+
+let byId,kids;
+function index(){
+  byId=new Map(people.map(p=>[p.id,p]));
+  kids=new Map();
+  for(const p of people){const k=p.parent&&byId.has(p.parent)?p.parent:0;(kids.get(k)||kids.set(k,[]).get(k)).push(p);}
+}
+function depth(p){let d=1,c=p;const seen=new Set();while(c.parent&&byId.has(c.parent)&&!seen.has(c.id)){seen.add(c.id);c=byId.get(c.parent);d++;}return d;}
+function chain(p){const a=[p];let c=p;const seen=new Set();while(c.parent&&byId.has(c.parent)&&!seen.has(c.id)){seen.add(c.id);c=byId.get(c.parent);a.unshift(c);}return a;}
+function spouses(p){return (p.spouse||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);}
+function vkids(p){if(!p||!p.spouseOf)return [];const h=byId.get(p.spouseOf);if(!h)return [];const ws=spouses(h);
+  return (kids.get(h.id)||[]).filter(c=>ws.length<=1||c.mother===p.name);}
+function allKids(p){return p?(kids.get(p.id)||[]).concat(vkids(p)):[];}
+function chainIn(p){if(!p)return null;if(treeOf(p)===cur)return chain(p);const c=chain(p);
+  for(let i=c.length-1;i>0;i--){const par=c[i-1];for(const wid of Object.values(par.spouseIds||{})){const w=byId.get(wid);
+    if(w&&w.spouseOf===par.id&&vkids(w).includes(c[i])){const up=chainIn(w);if(up)return up.concat(c.slice(i));}}}
+  return null;}
+function countDesc(id,seen){seen=seen||new Set();let n=0;for(const c of allKids(byId.get(id))){if(seen.has(c.id))continue;seen.add(c.id);n+=1+countDesc(c.id,seen);}return n;}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toast(m){const el=$('toast');el.textContent=m;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200);}
+function meP(){return ME!=null?people.find(p=>p.id===ME):null;}
+function short(s,n){return s.length>n?s.slice(0,n-1)+'…':s;}
+function byMother(p,cs){const w=spouses(p);if(w.length<2)return cs;const r=c=>{const i=w.indexOf(c.mother);return i<0?w.length:i;};return cs.slice().sort((a,b)=>r(a)-r(b));}
+
+function applyLang(){
+  document.documentElement.lang=lang==='kk'?'kk':'ru';
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  document.querySelectorAll('[data-tp]').forEach(e=>e.placeholder=t(e.dataset.tp));
+  document.querySelectorAll('[data-ta]').forEach(e=>{e.setAttribute('aria-label',t(e.dataset.ta));e.title=t(e.dataset.ta);});
+  $('lKk').setAttribute('aria-selected',lang==='kk');document.querySelectorAll('.lsw').forEach(b=>b.setAttribute('aria-selected',b.dataset.l===lang));$('lRu').setAttribute('aria-selected',lang==='ru');
+  cardBtn();
+}
+function matches(p,q,unsure){
+  if(unsure&&!p.unsure)return false;
+  if(!q)return true;
+  return (p.name+' '+(p.note||'')+' '+(p.born||'')).toLowerCase().includes(q);
+}
+function render(){
+  index();
+  if(view==='list')renderList();
+  const inT=people.filter(p=>treeOf(p)===cur);
+  const maxD=inT.reduce((m,p)=>Math.max(m,depth(p)),0);
+  const un=inT.filter(p=>p.unsure).length;
+  $('tSh').setAttribute('aria-selected',cur==='sh');$('tMe').setAttribute('aria-selected',cur==='me');$('tsub').textContent=t(cur==='sh'?'subSh':'subMe');
+  $('oV').setAttribute('aria-selected',orient==='v');$('oH').setAttribute('aria-selected',orient==='h');
+  $('stats').innerHTML=`<span><b>${inT.length}</b> ${t('people')}</span><span><b>${maxD}</b> ${t('gens')}</span><span><b>${un}</b> ${t('unsure')}</span>`;
+  renderCard();
+  if(view==='graph')renderGraph();
+}
+function renderList(){
+  const q=$('q').value.trim().toLowerCase(), u=$('onlyUnsure').checked, filtering=!!q||u;
+  const keep=new Set(), hit=new Set();
+  if(filtering){for(const p of people)if(matches(p,q,u)){const c=chainIn(p);if(!c)continue;hit.add(p.id);for(const a of c)keep.add(a.id);}}
+  function ul(pid){
+    const list=(pid?allKids(byId.get(pid)):(kids.get(0)||[])).filter(p=>(!filtering||keep.has(p.id))&&(pid||treeOf(p)===cur));
+    if(!list.length)return '';
+    return '<ul class="t">'+list.map(p=>{
+      const ch=allKids(p).length, isOpen=filtering?true:open.has(p.id);
+      const yrs=p.born||p.died?` <span class="gen">${esc(p.born||'')}${p.died?'–'+esc(p.died):''}</span>`:'';
+      return `<li><div class="row${p.id===selId?' sel':''}${p.unsure?' unsure':''}${hit.has(p.id)&&q?' hit':''}" data-id="${p.id}" tabindex="0">`+
+        `<span class="tog" data-tog="${p.id}">${ch?(isOpen?'▾':'▸'):'·'}</span><span class="nm">${esc(p.name)}</span>${p.unsure?'<span class="q">?</span>':''}${p.id===ME?` <span class="me-tag">${t('you')}</span>`:''}${p.spouse?` <span class="gen">∞ ${esc(p.spouse)}</span>`:''}${p.mother&&spouses(byId.get(p.parent)||{}).length>1?` <span class="gen">(${t('from')} ${esc(p.mother)})</span>`:''}${yrs}`+
+        `${ch&&!isOpen?` <span class="cnt">+${countDesc(p.id)}</span>`:''}</div>${ch&&isOpen?ul(p.id):''}</li>`;
+    }).join('')+'</ul>';
+  }
+  $('tree').innerHTML=ul(0)||`<div class="empty" style="padding:10px">${t('notFound')}</div>`;
+}
+
+/* ---------- graph ---------- */
+const NW=138,NH=50;
+const G={v:{step:NW+18,gap:64},h:{step:NH+14,gap:78}};
+let lastPos={},anchor=null,needCenter=null;
+function renderGraph(){
+  const g=$('vp'),svg=$('gsvg'),O=G[orient];
+  let sel=byId.get(selId);if(sel&&!chainIn(sel))sel=null;
+  const me=meP(), line=new Set(((me&&chainIn(me))||[]).map(x=>x.id));
+  const roots=(kids.get(0)||[]).filter(r=>treeOf(r)===cur);
+  let next=0; const nodes=[], edges=[], groups=[];
+  const seen=new Set();
+  function lay(p,d){
+    seen.add(p.id);
+    const all=byMother(p,allKids(p)).filter(c=>!seen.has(c.id));
+    const isOpen=gexp.has(p.id)&&all.length>0;
+    const cs=isOpen?all:[];
+    let b;
+    if(!cs.length){b=next;next+=O.step;}
+    else{const bs=cs.map(c=>lay(c,d+1));b=(bs[0]+bs[bs.length-1])/2;
+      const ws=spouses(p);
+      if(ws.length<2)cs.forEach((c,i)=>edges.push({b1:b,d1:d,b2:bs[i],me:line.has(c.id)}));
+      else{const gs=[];cs.forEach((c,i)=>{const m=ws.includes(c.mother)?c.mother:'';const q=gs[gs.length-1];if(q&&q.m===m)q.ix.push(i);else gs.push({m,ix:[i]});});
+        for(const q of gs){const gb=(bs[q.ix[0]]+bs[q.ix[q.ix.length-1]])/2,gme=q.ix.some(i=>line.has(cs[i].id));
+          groups.push({b,gb,d,label:q.m||t('motherUnknown'),me:gme});
+          q.ix.forEach(i=>edges.push({b1:gb,d1:d,b2:bs[i],me:line.has(cs[i].id),grp:true}));}}}
+    nodes.push({p,b,d,n:all.length,open:isOpen,hidden:isOpen?0:countDesc(p.id)});
+    return b;
+  }
+  roots.forEach((r,i)=>{if(i)next+=O.step;lay(r,0);});
+  const V=orient==='v';
+  const DA=V?NH+O.gap:NW+O.gap;
+  const pos=(b,d)=>V?{x:b,y:d*DA}:{x:d*DA,y:b};
+  const pt=(across,along)=>V?`${across},${along}`:`${along},${across}`;
+  const cB=b=>b+(V?NW/2:NH/2), aEnd=d=>d*DA+(V?NH:NW), aStart=d=>d*DA;
+  let h='';
+  for(const q of groups){const c1=cB(q.b),c2=cB(q.gb),a=aEnd(q.d);
+    h+=`<path class="edge${q.me?' me':''}" d="M${pt(c1,a)} L${pt(c1,a+12)} L${pt(c2,a+12)} L${pt(c2,a+20)}"/>`;
+    const lbl=t('from')+' '+short(q.label,14),w=Math.min(140,22+lbl.length*6.4);
+    const P=V?{x:c2-w/2,y:a+20}:{x:a+20-0,y:c2-10};
+    h+=`<rect class="wife" x="${V?P.x:a+16}" y="${V?P.y:P.y}" width="${V?w:Math.max(24,O.gap-26)}" height="20" rx="10"/><text class="wife-t" x="${V?c2:a+16+Math.max(24,O.gap-26)/2}" y="${(V?P.y:P.y)+14}" text-anchor="middle">${esc(V?lbl:short(q.label,6))}<title>${esc(lbl)}</title></text>`;}
+  for(const e of edges){const c1=cB(e.b1),c2=cB(e.b2),a1=aEnd(e.d1)+(e.grp?(V?40:O.gap-8):0),a2=aStart(e.d1+1),m=e.grp?a1+(a2-a1)/2:aEnd(e.d1)+O.gap/2;
+    h+=`<path class="edge${e.me?' me':''}" d="M${pt(c1,e.grp?a1:aEnd(e.d1))} L${pt(c1,m)} L${pt(c2,m)} L${pt(c2,a2-2)}" marker-end="url(#${e.me?'arrMe':'arr'})"/>`;}
+  for(const n of nodes){const p=n.p,{x,y}=pos(n.b,n.d);
+    const cls=['node',p.unsure&&'unsure',line.has(p.id)&&'line',p.id===ME&&'me',sel&&p.id===sel.id&&'sel'].filter(Boolean).join(' ');
+    const sub=p.spouse?'∞ '+p.spouse:(p.born||p.died?(p.born||'')+(p.died?'–'+p.died:''):(p.id===ME?t('youNode'):''));
+    let tg='';
+    if(n.n){const cx=V?x+NW/2:x+NW, cy=V?y+NH:y+NH/2;
+      const lab=n.open?'−':'+'+n.hidden, w=n.open?16:Math.max(20,10+lab.length*6.5);
+      tg=`<rect class="tg${n.open?' open':''}" x="${cx-w/2}" y="${cy-8}" width="${w}" height="16" rx="8"/><text class="tgt" x="${cx}" y="${cy+3.5}" text-anchor="middle">${lab}</text>`;}
+    h+=`<g class="${cls}" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}"><title>${esc(p.name+(p.note?'\n'+p.note:''))}</title>`+
+      `<rect class="box" x="${x}" y="${y}" width="${NW}" height="${NH}" rx="7"/>`+
+      `<text class="n1" x="${x+10}" y="${y+(sub?21:30)}">${esc(short(p.name,17))}${p.unsure?' ?':''}</text>`+
+      (sub?`<text class="n2" x="${x+10}" y="${y+38}">${esc(short(sub,21))}</text>`:'')+tg+`</g>`;}
+  g.innerHTML=h;
+  lastPos={};for(const n of nodes){const q=pos(n.b,n.d);lastPos[n.p.id]=q;}
+  if(anchor&&lastPos[anchor.id]){const a=lastPos[anchor.id];tx=anchor.sx-a.x*zoom;ty=anchor.sy-a.y*zoom;}
+  else if(needCenter&&lastPos[needCenter]){const a=lastPos[needCenter],W=svg.clientWidth||800,H=svg.clientHeight||500;
+    if(zoom>1.3||zoom<0.5)zoom=1;
+    tx=W/2-(a.x+NW/2)*zoom;ty=V?H*0.55-(a.y+NH/2)*zoom:H/2-(a.y+NH/2)*zoom;}
+  anchor=null;needCenter=null;
+  applyT();
+}
+function setAnchor(id){const a=lastPos[id];if(a)anchor={id,sx:tx+a.x*zoom,sy:ty+a.y*zoom};}
+function applyT(){$('vp').setAttribute('transform',`translate(${tx},${ty}) scale(${zoom})`);}
+function zoomAt(f,cx,cy){const nz=Math.min(2.5,Math.max(0.1,zoom*f));tx=cx-(cx-tx)*nz/zoom;ty=cy-(cy-ty)*nz/zoom;zoom=nz;applyT();}
+function fitAll(){const ps=Object.values(lastPos);if(!ps.length)return;const svg=$('gsvg'),W=svg.clientWidth,H=svg.clientHeight;
+  const x0=Math.min(...ps.map(p=>p.x)),y0=Math.min(...ps.map(p=>p.y)),x1=Math.max(...ps.map(p=>p.x))+NW,y1=Math.max(...ps.map(p=>p.y))+NH;
+  zoom=Math.max(0.1,Math.min(1.2,(W-40)/(x1-x0),(H-40)/(y1-y0)));tx=(W-(x1-x0)*zoom)/2-x0*zoom;ty=(H-(y1-y0)*zoom)/2-y0*zoom;applyT();}
+function revealPath(p){const c=chainIn(p)||chain(p);for(const a of c.slice(0,-1)){gexp.add(a.id);open.add(a.id);}}
+function setView(v){view=v;
+  $('graph').hidden=v!=='graph';$('tree').hidden=v==='graph';$('gctl').hidden=v!=='graph';$('lctl').hidden=v==='graph';
+  $('vGraph').setAttribute('aria-selected',v==='graph');$('vList').setAttribute('aria-selected',v!=='graph');
+  if(v==='graph'&&selId)needCenter=selId;
+  render();
+  if(v!=='graph')document.querySelector('.row.sel')?.scrollIntoView({block:'center'});}
+function defaultSel(){const m=meP();if(m&&chainIn(m))return m;
+  const bn=(TREECFG[cur]||{}).boss,sp=bn&&people.find(p=>p.name===bn&&treeOf(p)===cur);if(sp)return sp;
+  return (kids.get(0)||[]).find(r=>treeOf(r)===cur);}
+function initExpand(){for(const r of (kids.get(0)||[]))if(treeOf(r)===cur)gexp.add(r.id);const s=defaultSel();if(s){selId=s.id;revealPath(s);needCenter=s.id;}}
+function setTree(x){cur=x;ls('.tree',x);index();initExpand();render();}
+function goTo(id){const p=byId.get(id);if(!p)return;if(!chainIn(p)){cur=treeOf(p);ls('.tree',cur);}selId=id;revealPath(p);needCenter=id;render();}
+(function(){
+  const el=$('graph');let st=null;
+  el.addEventListener('pointerdown',e=>{st={x:e.clientX,y:e.clientY,tx,ty,moved:false};el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointermove',e=>{if(!st)return;const dx=e.clientX-st.x,dy=e.clientY-st.y;
+    if(Math.abs(dx)+Math.abs(dy)>4){st.moved=true;el.classList.add('drag');}
+    if(st.moved){tx=st.tx+dx;ty=st.ty+dy;applyT();}});
+  el.addEventListener('pointerup',e=>{const s=st;st=null;el.classList.remove('drag');
+    if(s&&!s.moved){hitNode(document.elementFromPoint(e.clientX,e.clientY));}});
+  el.addEventListener('pointercancel',()=>{st=null;el.classList.remove('drag');});
+  el.addEventListener('wheel',e=>{e.preventDefault();const r=el.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top);},{passive:false});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hitNode(e.target);}});
+  function hitNode(x){const n=x&&x.closest&&x.closest('.node');if(!n)return;
+    const id=+n.dataset.id;setAnchor(id);
+    if(allKids(byId.get(id)).length){gexp.has(id)?gexp.delete(id):gexp.add(id);}
+    selId=id;render();}
+})();
+$('tSh').onclick=()=>setTree('sh');$('tMe').onclick=()=>setTree('me');
+$('lKk').onclick=()=>{lang='kk';ls('.lang','kk');applyLang();render();};
+$('lRu').onclick=()=>{lang='ru';ls('.lang','ru');applyLang();render();};
+$('vGraph').onclick=()=>setView('graph');$('vList').onclick=()=>setView('list');
+$('oV').onclick=()=>{if(orient!=='v'){orient='v';ls('.orient','v');needCenter=selId;render();}};
+$('oH').onclick=()=>{if(orient!=='h'){orient='h';ls('.orient','h');needCenter=selId;render();}};
+$('toMe').onclick=()=>{const m=meP();if(m)goTo(m.id);else toast(t('markMe'));};
+$('gExp').onclick=()=>{people.forEach(p=>gexp.add(p.id));render();fitAll();};
+$('gCol').onclick=()=>{gexp.clear();initExpand();render();};
+$('zIn').onclick=()=>{const r=$('gsvg');zoomAt(1.25,r.clientWidth/2,r.clientHeight/2);};
+$('zOut').onclick=()=>{const r=$('gsvg');zoomAt(0.8,r.clientWidth/2,r.clientHeight/2);};
+$('zFit').onclick=fitAll;
+$('newRoot').onclick=()=>add(null);
+function isNoCard(){return document.querySelector('.main').classList.contains('nocard');}
+function cardBtn(){$('cardTog').textContent=t(isNoCard()?'cardShow':'cardHide');}
+function cardMode(hide){document.querySelector('.main').classList.toggle('nocard',hide);ls('.nocard',hide?'1':'');cardBtn();}
+$('cardTog').onclick=()=>cardMode(!isNoCard());
+if(ls('.nocard'))cardMode(true);
+
+function opts(selfId){
+  const bad=new Set([selfId]);
+  (function walk(id){for(const c of kids.get(id)||[]){bad.add(c.id);walk(c.id);}})(selfId);
+  return people.filter(p=>!bad.has(p.id)).map(p=>({id:p.id,label:chain(p).slice(-3).map(x=>x.name).join(' → ')}))
+    .sort((a,b)=>a.label.localeCompare(b.label,'kk'));
+}
+function renderCard(){
+  const c=$('card'); const p=byId.get(selId);
+  if(!p){c.innerHTML=`<div class="empty">${t('selectPerson')}</div>`;return;}
+  const ch=kids.get(p.id)||[];
+  const path=(chainIn(p)||chain(p)).slice(0,-1).map(a=>`<a data-go="${a.id}">${esc(a.name)}</a>`).join(' → ');
+  const par=byId.get(p.parent);
+  c.innerHTML=`
+    <div><div class="path">${path||t('root')}</div><h2>${esc(p.name)}</h2>
+      <div class="note">${t('gen',(chainIn(p)||chain(p)).length,countDesc(p.id))}</div>
+      ${p.spouseOf&&byId.has(p.spouseOf)?`<div class="note">${t('spouseLink')}: <a class="lnk" data-go="${p.spouseOf}">${esc(byId.get(p.spouseOf).name)} → ${t(treeOf(byId.get(p.spouseOf))==='sh'?'treeSh':'treeMe')}</a></div>`:''}</div>
+    <label class="f"><span>${t('fName')}</span><input type="text" id="e_name" value="${esc(p.name)}"></label>
+    <div class="two">
+      <label class="f"><span>${t('born')}</span><input type="text" id="e_born" value="${esc(p.born||'')}" placeholder="${t('bornPh')}"></label>
+      <label class="f"><span>${t('died')}</span><input type="text" id="e_died" value="${esc(p.died||'')}"></label>
+    </div>
+    <div class="f"><span>${t('spouseF')}</span><input type="text" id="e_spouse" value="${esc(p.spouse||'')}" placeholder="${t('spousePh')}">
+      ${spouses(p).length?`<div class="kids">${spouses(p).map((w,i)=>{const sid=(p.spouseIds||{})[w];return `<a data-rod="${i}">${esc(w)}: ${sid&&byId.has(sid)?t('herRod'):t('addHerRod')}</a>`;}).join('')}</div>`:''}</div>
+    ${par&&spouses(par).length?`<label class="f"><span>${t('motherF',esc(par.name))}</span><select id="e_mother"><option value="">${t('notSet')}</option>${spouses(par).map(w=>`<option${w===p.mother?' selected':''}>${esc(w)}</option>`).join('')}</select></label>`:''}
+    <label class="f"><span>${t('parentF')}</span><select id="e_parent"><option value="">${t('topNone')}</option>
+      ${opts(p.id).map(o=>`<option value="${o.id}"${o.id===p.parent?' selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
+    <label class="f"><span>${t('noteF')}</span><textarea id="e_note">${esc(p.note||'')}</textarea></label>
+    <label class="chk"><input type="checkbox" id="e_unsure"${p.unsure?' checked':''}> ${t('unsureChk')}</label>
+    <label class="chk"><input type="checkbox" id="e_me"${p.id===ME?' checked':''}> ${t('meChk')}</label>
+    <div class="f"><span>${t('kidsF')} (${ch.length})</span><div class="kids">${ch.map(k=>`<a data-go="${k.id}">${esc(k.name)}</a>`).join('')||`<span class="empty">${t('none')}</span>`}</div></div>
+    <div class="acts"><button class="primary" id="addChild">${t('addChild')}</button><button id="addPar">${t('addPar')}</button><button id="addSib">${t('addSib')}</button><button class="danger" id="del">${t('del')}</button></div>
+    <div id="delBox"></div>`;
+  if(!canEdit()){c.querySelectorAll('input:not(#e_me),textarea,select').forEach(e=>e.disabled=true);}
+  const upd=(k,v)=>{if(v===''||v===false){delete p[k];}else p[k]=v;persist();};
+  $('e_name').oninput=e=>{p.name=e.target.value||t('noName');persist();c.querySelector('h2').textContent=p.name;};
+  $('e_name').onchange=()=>{setAnchor(p.id);render();};
+  $('e_born').onchange=e=>{upd('born',e.target.value.trim());setAnchor(p.id);render();};
+  $('e_died').onchange=e=>{upd('died',e.target.value.trim());setAnchor(p.id);render();};
+  $('e_note').oninput=e=>upd('note',e.target.value);
+  $('e_spouse').onchange=e=>{upd('spouse',spouses({spouse:e.target.value}).join(', '));setAnchor(p.id);render();};
+  if($('e_mother'))$('e_mother').onchange=e=>{upd('mother',e.target.value);setAnchor(p.id);render();};
+  $('e_me').onchange=e=>{ME=e.target.checked?p.id:null;if(SB)SB.rpc('set_me',{pid:ME});setAnchor(p.id);render();};
+  $('e_unsure').onchange=e=>{upd('unsure',e.target.checked);setAnchor(p.id);render();};
+  $('e_parent').onchange=e=>{const tr=treeOf(p);upd('parent',e.target.value?+e.target.value:'');if(p.parent)delete p.tree;else p.tree=tr;index();revealPath(p);needCenter=p.id;render();toast(t('moved'));};
+  $('addChild').onclick=()=>add(p.id);
+  $('addPar').onclick=()=>{const id=nextId(),n={id,name:t('fatherOf')+p.name};if(p.parent)n.parent=p.parent;else{n.tree=treeOf(p);delete p.tree;}people.push(n);p.parent=id;gexp.add(id);selId=id;persist();index();revealPath(n);needCenter=id;render();focusName();};
+  c.querySelectorAll('[data-rod]').forEach(a=>a.onclick=()=>{
+    const w=spouses(p)[+a.dataset.rod];p.spouseIds=p.spouseIds||{};const sid=p.spouseIds[w];
+    if(sid&&byId.has(sid)){goTo(sid);return;}
+    const id=nextId();people.push({id,name:w,tree:cur,note:t('spouseNote',p.name),spouseOf:p.id});
+    p.spouseIds[w]=id;persist();index();gexp.add(id);goTo(id);toast(t('rodCreated'));});
+  $('addSib').onclick=()=>add(p.parent||null);
+  $('del').onclick=()=>{
+    const n=countDesc(p.id);
+    $('delBox').innerHTML=`<div class="confirm">${esc(t('delQ',p.name,n))}<div class="acts"><button class="danger" id="delYes">${t('delYes')}</button><button id="delNo">${t('cancel')}</button></div></div>`;
+    $('delNo').onclick=()=>$('delBox').innerHTML='';
+    $('delYes').onclick=()=>{const gone=new Set([p.id]);(function w(id){for(const k of kids.get(id)||[]){gone.add(k.id);w(k.id);}})(p.id);
+      people=people.filter(x=>!gone.has(x.id));selId=p.parent||null;persist();render();toast(t('deleted'));};
+  };
+}
+function focusName(){setTimeout(()=>{const el=$('e_name');if(el){el.focus();el.select();}},0);}
+function nextId(){let id;do{id=1000000+Math.floor(Math.random()*2000000000);}while(people.some(p=>p.id===id));return id;}
+function add(parent){
+  const id=nextId();
+  const n={id,name:t('newPerson')};if(parent)n.parent=parent;else n.tree=cur;
+  people.push(n);if(parent){open.add(parent);gexp.add(parent);}selId=id;persist();
+  if(parent&&lastPos[parent])setAnchor(parent);else needCenter=id;
+  render();focusName();
+}
+$('tree').addEventListener('click',e=>{
+  const x=e.target.closest('[data-tog]');
+  if(x){const id=+x.dataset.tog;open.has(id)?open.delete(id):open.add(id);render();return;}
+  const r=e.target.closest('.row');if(r){selId=+r.dataset.id;open.add(selId);render();
+    if(innerWidth<=820)$('card').scrollIntoView({behavior:'smooth',block:'start'});}
+});
+$('tree').addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest('.row');if(r){selId=+r.dataset.id;open.has(selId)?open.delete(selId):open.add(selId);render();document.querySelector(`.row[data-id="${selId}"]`)?.focus();}}});
+$('card').addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){goTo(+g.dataset.go);if(view!=='graph')document.querySelector('.row.sel')?.scrollIntoView({block:'center'});}});
+$('q').oninput=render;$('onlyUnsure').onchange=render;
+$('expandAll').onclick=()=>{people.forEach(p=>open.add(p.id));render();};
+$('collapseAll').onclick=()=>{open.clear();index();for(const p of kids.get(0)||[])open.add(p.id);render();};
+
+function download(name,text,type){
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast(t('dl')+name);}
+  catch(e){showJson();}
+}
+const stamp=()=>new Date().toISOString().slice(0,10);
+$('dlJson').onclick=()=>download(`family-tree-${stamp()}.json`,JSON.stringify(people,null,1),'application/json');
+$('dlCsv').onclick=()=>{
+  index();
+  const rows=[t('csv')];
+  for(const p of people){const par=byId.get(p.parent);rows.push([p.id,p.name,p.parent||'',par?par.name:'',depth(p),p.spouse||'',p.mother||'',p.born||'',p.died||'',p.unsure?t('yes'):'',chain(p).map(x=>x.name).join(' > '),p.note||'']);}
+  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  download(`family-tree-${stamp()}.csv`,csv,'text/csv');
+};
+function showJson(){const x=$('jsonout');x.hidden=false;x.value=JSON.stringify(people);x.select();toast(t('noDl'));}
+$('copyJson').onclick=()=>{const s=JSON.stringify(people);
+  (navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(()=>toast(t('copied'))).catch(showJson);};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(x=>{
+  try{const d=JSON.parse(x);if(!Array.isArray(d)||!d.every(p=>p.id&&p.name))throw 0;people=d.map(p=>{const o={...p};delete o.me;return o;});migrate();selId=null;persist();index();initExpand();render();toast(t('loaded',d.length));}
+  catch(_){toast(t('badFile'));}});e.target.value='';};
+/* ---------- A4 print ---------- */
+const PT={
+ ru:{title:{},branch:n=>' — ветка '+n,sheet:(i,n)=>`лист ${i} из ${n}`,bro:'брат: ',path:'Путь: ',
+   father:k=>`   (отец — на листе ${k})`,go:k=>`  → лист ${k}`,legend:'Слева направо: отец → дети. «?» — не проверено. «→ лист N» — продолжение ветки на другом листе.'},
+ kk:{title:{},branch:n=>' — '+n+' тармағы',sheet:(i,n)=>`${i}-парақ / ${n}`,bro:'бауыры: ',path:'Жолы: ',
+   father:k=>`   (әкесі — ${k}-парақта)`,go:k=>`  → ${k}-парақ`,legend:'Солдан оңға: әке → балалары. «?» — тексерілмеген. «→ N-парақ» — тармақтың жалғасы басқа парақта.'}};
+const MCTX=document.createElement('canvas').getContext('2d');
+const PFONT='Arial,"Segoe UI",Helvetica,sans-serif';
+function SW(t,f,fs){MCTX.font=`${f==='I'?'italic ':''}${f==='B'?'700 ':''}${fs}px ${PFONT}`;return MCTX.measureText(t).width;}
+function buildPrint(lng){
+  const TX=PT[lng],mm=72/25.4,PW=842,PH=595,M=8*mm,TOP=27*mm,BOT=10*mm,AVAIL=PH-TOP-BOT,MINFS=6.8,MAXFS=10;
+  const INK='#1a2130',MUT='#6b7584',LN='#8c949f',ACC='#1f4d8c';
+  index();
+  const me=meP(),myl=(me&&chainIn(me))||[],mySet=new Set(myl.map(x=>x.id));
+  const boss=(TREECFG[cur]||{}).boss,bi=myl.findIndex(x=>x.name===boss);
+  const line=new Set(bi>=0?myl.slice(0,bi+1).map(x=>x.id):[]);
+  const roots=(kids.get(0)||[]).filter(r=>treeOf(r)===cur);
+  const top=myl.length?myl[0]:roots[0];
+  if(!top)return [];
+  const chainA=[top],bro={};
+  for(;;){const c0=chainA[chainA.length-1],ch=allKids(c0),nx=ch.filter(c=>mySet.has(c.id)),side=ch.filter(c=>!mySet.has(c.id));
+    if(nx.length!==1||side.some(s=>allKids(s).length))break;if(side.length)bro[c0.id]=side;chainA.push(nx[0]);}
+  const root=chainA[chainA.length-1];
+  const par=new Map();
+  const K=p=>{const ks=allKids(p);ks.forEach(k=>{if(!par.has(k.id))par.set(k.id,p.id);});return ks;};
+  const ord=new Map();(function walk(p){ord.set(p.id,ord.size);for(const k of K(p))walk(k);})(root);
+  for(const r of roots)if(r!==top)(function walk(p){for(const k of K(p))walk(k);})(r);
+  const anc=p=>{const a=[p];while(par.has(a[0].id))a.unshift(byId.get(par.get(a[0].id)));return a[0]===root?chainA.slice(0,-1).concat(a):a;};
+  const total=p=>1+K(p).reduce((s,c)=>s+total(c),0);
+  const depthOf=(p,stop)=>stop.has(p.id)||!K(p).length?1:1+Math.max(...K(p).map(c=>depthOf(c,stop)));
+  const label=p=>p.name+(p.unsure?' ?':'');
+  function layout(r,stop,fs){
+    const rh=fs*1.42,ncol=depthOf(r,stop),gap=4*mm,colw=Math.min(48*mm,(PW-2*M-gap*(ncol-1))/ncol);
+    const items=[],edges=[];let cursor=0;
+    const wrap=names=>{const out=[];let c='';for(const n of names){const t=c?c+', '+n:n;if(SW(t,'R',fs)<=colw-2)c=t;else{if(c)out.push(c+',');c=n;}}if(c)out.push(c);return out;};
+    const leaf=c=>!K(c).length&&!stop.has(c.id);
+    function place(p,dep){
+      const ch=stop.has(p.id)?[]:K(p);
+      if(!ch.length){const y=cursor;cursor+=rh*(p.spouse?1.55:1);items.push(['node',dep,y,p]);return y+rh/2;}
+      const groups=[];let run=[];
+      for(const c of ch){if(leaf(c)&&!c.spouse&&!line.has(c.id))run.push(c);else{if(run.length){groups.push(run);run=[];}groups.push(c);}}
+      if(run.length)groups.push(run);
+      const cys=[];
+      for(const g of groups){
+        if(Array.isArray(g)&&g.length>=3){const ls=wrap(g.map(c=>c.name+(c.unsure?'?':'')));const y=cursor,h=ls.length*rh;cursor+=h+rh*.35;items.push(['block',dep+1,y,[ls,h]]);cys.push([y+h/2,null]);}
+        else for(const c of (Array.isArray(g)?g:[g]))cys.push([place(c,dep+1),c]);}
+      const cy=(cys[0][0]+cys[cys.length-1][0])/2;
+      if(p.spouse)cursor=Math.max(cursor,cy+rh*1.2);
+      items.push(['node',dep,cy-rh/2,p]);
+      for(const [yy,c] of cys)edges.push([dep,cy,dep+1,yy,!!c&&line.has(c.id),p]);
+      return cy;}
+    place(r,0);
+    return {items,edges,H:cursor,rh,colw,gap,fs};}
+  function fit(r,stop){for(let fs=MAXFS;fs>=MINFS;fs-=.1){const L=layout(r,stop,fs);if(L.H<=AVAIL)return L;}return null;}
+  const pages=[];
+  function plan(r){
+    const stop=new Set();let L=fit(r,stop);
+    if(!L){const cand=[];(function col(p){for(const c of K(p)){cand.push(c);col(c);}})(r);
+      const order=cand.filter(c=>K(c).length).sort((a,b)=>total(b)-total(a)||anc(a).length-anc(b).length);
+      for(const c of order){if(anc(c).slice(0,-1).some(a=>stop.has(a.id)))continue;stop.add(c.id);L=fit(r,stop);if(L)break;}
+      if(!L)L=layout(r,stop,MINFS);}
+    pages.push([r,stop,L]);
+    for(const sid of [...stop].sort((a,b)=>(ord.get(a)??0)-(ord.get(b)??0)))plan(byId.get(sid));}
+  plan(root);
+  for(const r of roots)if(r!==top)plan(r);
+  const pageOf=new Map(pages.map(([r],i)=>[r.id,i]));
+  const homePage=pid=>{for(let i=0;i<pages.length;i++){const [r,stop,L]=pages[i];if(!stop.has(pid)&&L.items.some(it=>it[0]==='node'&&it[3].id===pid))return i;}return 0;};
+  const X=s=>esc(s);
+  const N=pages.length,date=new Date().toLocaleDateString('ru-RU');
+  return pages.map(([r,stop,L],i)=>{
+    const {fs,rh,colw,gap}=L,XC=dep=>M+dep*(colw+gap);
+    let s=`<svg width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}" xmlns="http://www.w3.org/2000/svg" font-family='${PFONT}'><rect width="${PW}" height="${PH}" fill="#fff"/>`;
+    const txt=(x,y,t,f,size,col,anchor)=>`<text xml:space="preserve" x="${x}" y="${y}" font-size="${size}" fill="${col}"${f==='B'?' font-weight="700"':''}${f==='I'?' font-style="italic"':''}${anchor?` text-anchor="${anchor}"`:''}>${X(t)}</text>`;
+    s+=txt(M,M+4*mm,I18N[lng][cur==='sh'?'treeSh':'treeMe']+(i===0?'':TX.branch(r.name)),'B',14,INK);
+    s+=txt(PW-M,M+4*mm,TX.sheet(i+1,N)+' · '+date,'R',7.5,MUT,'end');
+    if(i===0&&r===root){
+      const names=chainA.map(p=>p.name),pad=2.2*mm,arr=4.5*mm;let fz=9.5,ws;
+      for(;;){ws=names.map(n=>SW(n,'B',fz)+2*pad);if(ws.reduce((a,b)=>a+b,0)+arr*(ws.length-1)<=PW-2*M||fz<6)break;fz-=.2;}
+      const bh=fz*1.9,yt=M+15*mm-bh;let bx=M;
+      chainA.forEach((p,j)=>{const w=ws[j];
+        s+=`<rect x="${bx}" y="${yt}" width="${w}" height="${bh}" rx="2" fill="#fff" stroke="${INK}" stroke-width=".8"/>`;
+        s+=txt(bx+w/2,yt+bh*.68,p.name,'B',fz,INK,'middle');
+        if(bro[p.id])s+=txt(bx+w/2,M+15*mm+2.8*mm,TX.bro+bro[p.id].map(b=>b.name).join(', '),'R',6.3,MUT,'middle');
+        if(j<chainA.length-1){const ax=bx+w,ay=yt+bh/2;s+=`<line x1="${ax+.8}" y1="${ay}" x2="${ax+arr-1.2}" y2="${ay}" stroke="${INK}" stroke-width=".8"/><path d="M${ax+arr-.6},${ay} L${ax+arr-2.2},${ay-1.1} L${ax+arr-2.2},${ay+1.1}z" fill="${INK}"/>`;}
+        bx+=w+arr;});
+    }else{
+      const a=anc(r).slice(0,-1);
+      let t=a.length?TX.path+a.map(p=>p.name).join(' → ')+(par.has(r.id)?TX.father(homePage(par.get(r.id))+1):''):'';
+      let fz=7.5;while(SW(t,'R',fz)>PW-2*M&&fz>5)fz-=.2;
+      s+=txt(M,M+12*mm,t,'R',fz,MUT);}
+    s+=txt(M,PH-4*mm,TX.legend,'R',6.5,MUT);
+    const nodew=new Map();
+    for(const [k,dep,y,p] of L.items)if(k==='node'){const f=line.has(p.id)?'B':(p.unsure?'I':'R');nodew.set(p.id,Math.min(colw,SW(label(p),f,fs)+1.5));}
+    for(const [d1,ya,d2,yb,mine,pp] of L.edges){const xa=XC(d1)+(nodew.get(pp.id)??colw)+.8,xm=XC(d2)-gap/2,xb=XC(d2)-.8;
+      s+=`<path d="M${xa},${TOP+ya} H${xm} V${TOP+yb} H${xb}" fill="none" stroke="${mine?INK:LN}" stroke-width="${mine?1:.45}"/>`;}
+    for(const [k,dep,y,p] of L.items){const x=XC(dep);
+      if(k==='node'){const mine=line.has(p.id),f=mine?'B':(p.unsure?'I':'R');let t=label(p);
+        const tag=stop.has(p.id)?TX.go(pageOf.get(p.id)+1):'',tw=tag?SW(tag,'B',fs*.85):0;
+        while(SW(t,f,fs)+tw>colw&&t.length>3)t=t.slice(0,-2)+'…';
+        const base=TOP+y+rh*.7;
+        s+=txt(x,base,t,f,fs,INK);
+        if(tag)s+=txt(x+SW(t,f,fs),base,tag,'B',fs*.85,ACC);
+        if(p.spouse)s+=txt(x+2,base+fs*.95,'∞ '+p.spouse,'R',fs*.78,MUT);}
+      else{const [ls]=p;ls.forEach((l,j)=>{s+=txt(x,TOP+y+(j+1)*rh-rh*.3,l,'R',fs,INK);});}}
+    return s+'</svg>';});
+}
+let plang=null;
+function openPrint(){plang=plang||lang;$('printView').hidden=false;document.body.style.overflow='hidden';renderPrint();}
+function renderPrint(){
+  $('pvKk').setAttribute('aria-selected',plang==='kk');$('pvRu').setAttribute('aria-selected',plang==='ru');
+  $('pvPages').innerHTML='';
+  (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{$('pvPages').innerHTML=buildPrint(plang).map(s=>`<div class="sheet">${s}</div>`).join('');});}
+$('printBtn').onclick=openPrint;
+$('pvClose').onclick=()=>{$('printView').hidden=true;document.body.style.overflow='';};
+$('pvKk').onclick=()=>{plang='kk';renderPrint();};
+$('pvRu').onclick=()=>{plang='ru';renderPrint();};
+$('pvPrint').onclick=()=>{try{window.print();}catch(e){}};
+function loadJsPDF(){return window.jspdf?Promise.resolve():new Promise((res,rej)=>{const x=document.createElement('script');x.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';x.onload=res;x.onerror=rej;document.head.appendChild(x);});}
+function svgImg(svg){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});}
+$('pvPdf').onclick=async()=>{
+  toast(t('pdfMaking'));
+  try{
+    await loadJsPDF();
+    const svgs=buildPrint(plang),pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}),S=3;
+    for(let i=0;i<svgs.length;i++){
+      const im=await svgImg(svgs[i]),cv=document.createElement('canvas');cv.width=842*S;cv.height=595*S;
+      const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);
+      if(i)pdf.addPage();pdf.addImage(cv.toDataURL('image/jpeg',.9),'JPEG',0,0,842,595);}
+    const name=`${I18N[plang][cur==='sh'?'treeSh':'treeMe']}-A4-${plang}-${stamp()}.pdf`;
+    const a=document.createElement('a');a.href=URL.createObjectURL(pdf.output('blob'));a.download=name;document.body.appendChild(a);a.click();a.remove();toast(t('dl')+name);
+  }catch(e){toast(t('pdfFail'));}
+};
+(function(){
+  const q=$('gq'),box=$('gqRes');let hits=[],on=0;
+  function show(){
+    const v=q.value.trim().toLowerCase();
+    if(!v){box.hidden=true;return;}
+    index();
+    hits=people.filter(p=>p.name.toLowerCase().includes(v)).sort((a,b)=>(treeOf(a)===cur?0:1)-(treeOf(b)===cur?0:1)||a.name.toLowerCase().indexOf(v)-b.name.toLowerCase().indexOf(v)).slice(0,15);
+    on=0;
+    box.innerHTML=hits.length?hits.map((p,i)=>{const a=(chainIn(p)||chain(p)).slice(0,-1).slice(-3).map(x=>x.name).join(' → ');
+      const tr=treeOf(p)!==cur?' · '+t(treeOf(p)==='sh'?'treeSh':'treeMe'):'';
+      return `<a data-i="${i}" class="${i===on?'on':''}">${esc(p.name)}${p.unsure?' ?':''}<small>${esc(a)}${esc(tr)}</small></a>`;}).join(''):`<div class="empty">${t('notFound')}</div>`;
+    box.hidden=false;}
+  function pick(i){const p=hits[i];if(!p)return;box.hidden=true;q.value='';goTo(p.id);}
+  q.addEventListener('input',show);
+  q.addEventListener('focus',show);
+  q.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!hits.length)return;on=(on+(e.key==='ArrowDown'?1:hits.length-1))%hits.length;box.querySelectorAll('a').forEach((a,i)=>a.classList.toggle('on',i===on));}
+    else if(e.key==='Enter'){e.preventDefault();pick(on);}
+    else if(e.key==='Escape'){box.hidden=true;}});
+  box.addEventListener('mousedown',e=>{const a=e.target.closest('a');if(a){e.preventDefault();pick(+a.dataset.i);}});
+  q.addEventListener('blur',()=>setTimeout(()=>box.hidden=true,150));
+})();
+
+applyLang();
+function showOnly(id){for(const x of ['auth','wait','loading'])$(x).hidden=x!==id;}
+document.querySelectorAll('.lsw').forEach(b=>b.onclick=()=>{lang=b.dataset.l;ls('.lang',lang);applyLang();});
+async function doAuth(up){const email=$('authEmail').value.trim(),password=$('authPass').value;
+  if(!email||password.length<6){$('authNote').textContent=t('authNeed');return;}
+  $('authSend').disabled=$('authUp').disabled=true;
+  const {data,error}=up?await SB.auth.signUp({email,password}):await SB.auth.signInWithPassword({email,password});
+  $('authSend').disabled=$('authUp').disabled=false;
+  if(error){$('authNote').textContent=t('authErr')+error.message;return;}
+  if(data.session&&!USER)start(data.session);else if(!data.session)$('authNote').textContent=t('confirmOff');}
+$('authForm').onsubmit=e=>{e.preventDefault();doAuth(false);};
+$('authUp').onclick=()=>doAuth(true);
+async function logout(){await SB.auth.signOut();location.reload();}
+$('logout').onclick=logout;$('logout2').onclick=logout;
+$('draftSend').onclick=async()=>{const ch=diff();if(!ch.length)return;$('draftSend').disabled=true;
+  const {error}=await SB.rpc('submit_proposal',{changes:ch,comment:$('draftComment').value.trim()||null});$('draftSend').disabled=false;
+  if(error){toast(t('saveErr')+error.message);return;}
+  try{localStorage.removeItem(DRAFT_KEY());}catch(e){}$('draftComment').value='';await reload();toast(t('draftSent'));};
+$('draftDrop').onclick=async()=>{if(!$('draftDrop').dataset.c){$('draftDrop').dataset.c='1';$('draftDrop').textContent=t('dropQ');setTimeout(()=>{delete $('draftDrop').dataset.c;$('draftDrop').textContent=t('draftDrop');},4000);return;}
+  delete $('draftDrop').dataset.c;$('draftDrop').textContent=t('draftDrop');try{localStorage.removeItem(DRAFT_KEY());}catch(e){}await reload();toast(t('draftDropped'));};
+$('draftShow').onclick=()=>openAdm('draft');
+async function reload(){people=await fetchPeople();migrate();setBase();if(ROLE==='editor'){applyDraft();draftUI(diff().length);}index();render();refreshBadge();}
+
+/* ---------- admin / proposals ---------- */
+let admTab='prop';
+const FIELDS={name:'fName',parent:'fParent',spouse:'fSpouse',mother:'fMother',note:'fNote',born:'fBorn',died:'fDied',unsure:'fUnsure',tree:'fTree'};
+function pname(id){const p=byId&&byId.get(Number(id));return p?p.name+' #'+id:'#'+id;}
+function fmtVal(k,v){if(v==null||v==='')return '∅';if(k==='parent')return pname(v);if(typeof v==='object')return JSON.stringify(v);return String(v);}
+function changeHtml(c){
+  const a=c.after,b=c.before,cls=!b?'add':!a?'del':'mod',nm=(a||b).name;
+  let h=`<div class="chg ${cls}"><b>${esc(nm)}</b> <span class="k">#${c.id} · ${t(cls==='add'?'chAdd':cls==='del'?'chDel':'chMod')}</span>`;
+  const keys=[...new Set([...Object.keys(b||{}),...Object.keys(a||{})])].filter(k=>JSON.stringify((b||{})[k])!==JSON.stringify((a||{})[k]));
+  for(const k of keys){if(cls!=='mod'&&k==='name')continue;h+=`<div><span class="k">${esc(FIELDS[k]?t(FIELDS[k]):k)}:</span> ${b&&cls==='mod'?`<del>${esc(fmtVal(k,b[k]))}</del> → `:''}${a?`<ins>${esc(fmtVal(k,a[k]))}</ins>`:''}</div>`;}
+  return h+'</div>';}
+async function refreshBadge(){
+  if(ROLE!=='admin'){ $('admBtn').hidden=ROLE!=='editor'; $('admBtn').textContent=t('aMine'); return;}
+  $('admBtn').hidden=false;
+  const {count}=await SB.from('proposals').select('id',{count:'exact',head:true}).eq('status','pending');
+  const {count:nu}=await SB.from('profiles').select('id',{count:'exact',head:true}).is('role',null);
+  const n=(count||0)+(nu||0);
+  $('admBtn').innerHTML=esc(t('admin'))+(n?`<span class="badge">${n}</span>`:'');
+  $('aUsers').innerHTML=esc(t('aUsers'))+(nu?`<span class="badge">${nu}</span>`:'');
+  $('aProp').innerHTML=esc(t('aProp'))+(count?`<span class="badge">${count}</span>`:'');}
+async function openAdm(tab){admTab=tab||admTab;$('adm').hidden=false;document.body.style.overflow='hidden';await renderAdm();}
+$('admBtn').onclick=()=>openAdm(ROLE==='admin'?'prop':'mine');
+$('admClose').onclick=()=>{$('adm').hidden=true;document.body.style.overflow='';};
+$('aProp').onclick=()=>openAdm('prop');$('aMine').onclick=()=>openAdm('mine');$('aUsers').onclick=()=>openAdm('users');$('aHist').onclick=()=>openAdm('hist');
+async function renderAdm(){
+  const isA=ROLE==='admin',B=$('admBody');
+  $('aProp').hidden=$('aUsers').hidden=$('aHist').hidden=!isA;
+  for(const [id,k] of [['aProp','prop'],['aMine','mine'],['aUsers','users'],['aHist','hist']])$(id).setAttribute('aria-selected',admTab===k);
+  if(admTab==='draft'){const ch=diff();B.innerHTML=`<div class="pcard"><h3>${t('draftN',ch.length)}</h3>${ch.map(changeHtml).join('')||t('noProps')}</div>`;return;}
+  B.innerHTML=`<p class="note">${t('loading')}</p>`;
+  if(admTab==='prop'||admTab==='mine'){
+    let q=SB.from('proposals').select('*').order('created_at',{ascending:false}).limit(100);
+    if(admTab==='prop')q=q.eq('status','pending');else q=q.eq('author',USER.id);
+    const {data,error}=await q;if(error){B.textContent=error.message;return;}
+    B.innerHTML=data.length?data.map(p=>`<div class="pcard" data-pid="${p.id}"><h3>#${p.id} · ${esc(p.author_email||'')} <span class="st ${p.status}">${t(p.status)}</span></h3>
+      <div class="pmeta">${new Date(p.created_at).toLocaleString()}${p.comment?' · «'+esc(p.comment)+'»':''}</div>
+      ${(p.changes||[]).map(changeHtml).join('')}
+      ${isA&&p.status==='pending'?`<div class="acts"><button class="primary" data-ap="${p.id}">${t('approve')}</button><button class="danger" data-rj="${p.id}">${t('reject')}</button></div>`:''}</div>`).join(''):`<p class="note">${t('noProps')}</p>`;
+    B.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{b.disabled=true;const {error}=await SB.rpc('approve_proposal',{pid:+b.dataset.ap});if(error){toast(error.message);b.disabled=false;return;}toast(t('approved'));await reload();renderAdm();});
+    B.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{b.disabled=true;const {error}=await SB.rpc('reject_proposal',{pid:+b.dataset.rj});if(error){toast(error.message);b.disabled=false;return;}toast(t('rejected'));refreshBadge();renderAdm();});
+  }else if(admTab==='users'){
+    const {data,error}=await SB.from('profiles').select('id,email,role,created_at').order('created_at',{ascending:false});data&&data.sort((a,b)=>(a.role?1:0)-(b.role?1:0));if(error){B.textContent=error.message;return;}
+    B.innerHTML=`<p class="note">${t('users')}</p><table class="utable"><tbody>${data.map(u=>`<tr><td>${esc(u.email||'')} ${u.id===USER.id?t('you2'):''}</td><td>${u.id===USER.id?t('role_'+u.role):`<select data-uid="${u.id}">${['','reader','editor','admin'].map(r=>`<option value="${r}"${(u.role||'')===r?' selected':''}>${r?t('role_'+r):t('roleNone')}</option>`).join('')}</select>`}</td></tr>`).join('')}</tbody></table>`;
+    B.querySelectorAll('select[data-uid]').forEach(sl=>sl.onchange=async()=>{const {error}=await SB.rpc('set_role',{uid:sl.dataset.uid,new_role:sl.value});toast(error?error.message:t('saved'));refreshBadge();});
+  }else{
+    const {data,error}=await SB.from('history').select('*').order('at',{ascending:false}).limit(50);if(error){B.textContent=error.message;return;}
+    B.innerHTML=data.length?data.map(h=>`<div class="pcard"><div class="pmeta">${new Date(h.at).toLocaleString()} · ${esc(h.by_email||'')}${h.proposal_id?' · #'+h.proposal_id:''}</div>${(h.changes||[]).map(changeHtml).join('')}</div>`).join(''):`<p class="note">${t('histEmpty')}</p>`;
+  }}
+
+async function start(session){
+  USER=session.user;showOnly('loading');
+  const {data:prof}=await SB.from('profiles').select('role,me_id,email').eq('id',USER.id).maybeSingle();
+  ROLE=prof&&prof.role||null;ME=prof&&prof.me_id!=null?Number(prof.me_id):null;
+  if(!ROLE){$('waitMail').textContent=USER.email;showOnly('wait');return;}
+  try{await loadSettings();people=await fetchPeople();}catch(e){$('loading').querySelector('p').textContent=t('loadErr')+e.message;return;}
+  migrate();setBase();
+  if(ROLE==='editor'){applyDraft();}
+  document.body.classList.toggle('ro',!canEdit());
+  $('importBtn').hidden=ROLE!=='admin';
+  $('who').hidden=false;$('whoTxt').innerHTML=`<b>${esc(USER.email)}</b> · ${t('role_'+ROLE)}`;
+  index();
+  for(const p of people){if(depth(p)<=4)open.add(p.id);}
+  initExpand();
+  showOnly(null);
+  setView('graph');
+  if(ROLE==='editor')draftUI(diff().length);
+  refreshBadge();
+}
+(async function boot(){
+  if(!SB){$('loading').querySelector('p').textContent='config.js: set Supabase url and anonKey';return;}
+  const {data:{session}}=await SB.auth.getSession();
+  if(session)start(session);else showOnly('auth');
+  SB.auth.onAuthStateChange((ev,ses)=>{if(ev==='SIGNED_IN'&&ses&&!USER)start(ses);});
+})();
+})();
+</script>
+
+</body></html>
