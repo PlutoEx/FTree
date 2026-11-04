@@ -121,7 +121,7 @@ textarea#jsonout{min-height:120px;font:12px/1.3 ui-monospace,Menlo,monospace}
 }
 .overlay{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
 .overlay[hidden]{display:none!important}
-.auth-box{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.auth-box{width:min(320px,100%);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:12px}
 .auth-h{font:700 1.8rem/1.1 var(--display);margin:0}
 .who{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);flex-wrap:wrap;justify-content:flex-end}
 .who b{color:var(--ink)}
@@ -143,6 +143,8 @@ textarea#jsonout{min-height:120px;font:12px/1.3 ui-monospace,Menlo,monospace}
 .chg del{color:var(--danger)}.chg ins{color:#2f8f4e;text-decoration:none;font-weight:700}
 .st{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:9px;background:var(--accent-soft)}
 .st.approved{background:#dcf2e3;color:#1d6b38}.st.rejected{background:#fbe0dd;color:var(--danger)}
+.urow{display:flex;flex-wrap:wrap;gap:8px}.urow input{flex:1 1 140px}
+.utable input{width:100%;min-width:90px}
 .utable{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px}
 .utable td,.utable th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
 body.ro .acts,body.ro [data-rod],body.ro #newRoot,body.ro #importBtn{display:none!important}
@@ -227,12 +229,9 @@ body.has-draft{padding-bottom:70px}
 </div>
 <div id="auth" class="overlay" hidden>
   <form class="auth-box" id="authForm">
-    <div class="seg lang"><button type="button" class="lsw" data-l="kk">ҚАЗ</button><button type="button" class="lsw" data-l="ru">РУС</button></div>
-    <h1 class="auth-h">Family Tree</h1>
-    <p id="authMsg" data-t="authIntro"></p>
-    <label class="f"><span data-t="email"></span><input type="email" id="authEmail" required autocomplete="username"></label>
-    <label class="f"><span data-t="password"></span><input type="password" id="authPass" required minlength="6" autocomplete="current-password"></label>
-    <div class="acts"><button class="primary" id="authSend" data-t="signIn"></button><button type="button" id="authUp" data-t="signUp"></button></div>
+    <input type="text" id="authEmail" required autocomplete="username" autocapitalize="none" data-tp="login">
+    <input type="password" id="authPass" required autocomplete="current-password" data-tp="password">
+    <button class="primary" id="authSend" data-t="signIn"></button>
     <p class="note" id="authNote"></p>
   </form>
 </div>
@@ -273,7 +272,7 @@ body.has-draft{padding-bottom:70px}
 <script>
 (function(){
 const I18N={
-ru:{authIntro:'Вход только для родственников. Впервые здесь — введите почту, придумайте пароль и нажмите «Создать аккаунт». Затем админ откроет вам доступ.',email:'Почта',password:'Пароль (не меньше 6 символов)',signIn:'Войти',signUp:'Создать аккаунт',authNeed:'Введите почту и пароль (не меньше 6 символов).',confirmOff:'Аккаунт создан, но вход не выполнен: в Supabase нужно выключить подтверждение почты.',authErr:'Не получилось: ',
+ru:{login:'Логин',password:'Пароль',signIn:'Войти',badLogin:'Неверный логин или пароль',authErr:'Ошибка: ',
  waitRole:'Вы вошли, но доступ ещё не выдан. Попросите администратора открыть вам доступ.',logout:'Выйти',loading:'Загрузка…',loadErr:'Не удалось загрузить данные: ',
  role_admin:'админ',role_editor:'редактор',role_reader:'читатель',admin:'Управление',
  draftN:n=>`Ваши изменения: ${n}`,draftCommentPh:'Комментарий для админа (необязательно)',draftSend:'Отправить на проверку',draftShow:'Посмотреть',draftDrop:'Отменить всё',
@@ -281,7 +280,7 @@ ru:{authIntro:'Вход только для родственников. Впер
  saved:'Сохранено',saveErr:'Не сохранилось: ',aProp:'Предложения',aMine:'Мои предложения',aUsers:'Пользователи',aHist:'История',
  approve:'Принять',reject:'Отклонить',approved:'Принято',rejected:'Отклонено',pending:'на проверке',noProps:'Предложений нет.',
  chAdd:'новый',chDel:'удалён',chMod:'изменён',fParent:'отец/мать',fName:'имя',fSpouse:'жена/муж',fMother:'мать',fNote:'заметка',fBorn:'родился',fDied:'умер',fUnsure:'не проверено',fTree:'древо',
- roleNone:'— нет доступа —',you2:'(вы)',users:'Пользователи появляются здесь после первого входа на сайт.',histEmpty:'Пока пусто.',
+ roleNone:'— нет доступа —',uAdd:'Новый пользователь',uCreate:'Создать',uHint:'Логин — латиницей или кириллицей без пробелов, пароль от 4 символов. Сообщите их человеку сами.',uNewPass:'Новый пароль',uRole:'Роль',uSave:'Сохранить',uDelQ:'Точно удалить?',uShort:'Пароль — минимум 4 символа',you2:'(вы)',histEmpty:'Пока пусто.',
  by:'кто',when:'когда',printBtn:'Печать A4',doPrint:'Печать',savePdf:'Сохранить PDF',pdfMaking:'Готовлю PDF…',pdfFail:'Не удалось сделать PDF: для этого нужен интернет',gSearchPh:'Найти человека…',close:'Закрыть',printHint:'A4 альбомно, масштаб 100%. Внутри Claude печать и скачивание не работают — откройте сохранённый файл в обычном браузере.',treeSh:'Древо 1',treeMe:'Древо 2',subSh:'',subMe:'',
  people:'чел.',gens:'поколений',unsure:'не проверено',vGraph:'Схема',vList:'Список',toMe:'★ Моя ветка',newRoot:'+ Новый род',
  oV:'Вертикально',oH:'Горизонтально',expandAll:'Раскрыть всё',collapse:'Свернуть',zIn:'Приблизить',zOut:'Отдалить',fit:'Вписать',
@@ -310,7 +309,7 @@ ru:{authIntro:'Вход только для родственников. Впер
  notice:'Загружена новая версия данных от Claude. Ваши прежние правки из этого браузера сохранены отдельно.',
  restore:'Вернуть мои правки вместо новой версии',restored:'Ваши правки возвращены',noName:'Без имени',
  csv:['id','Имя','Родитель id','Родитель','Поколение','Жена/муж','Мать','Родился','Умер','Не проверено','Путь','Заметки'],yes:'да'},
-kk:{authIntro:'Кіру тек туыстарға арналған. Алғаш рет болсаңыз — поштаңызды жазып, құпиясөз ойлап, «Аккаунт ашу» батырмасын басыңыз. Содан кейін әкімші рұқсат береді.',email:'Пошта',password:'Құпиясөз (кемінде 6 таңба)',signIn:'Кіру',signUp:'Аккаунт ашу',authNeed:'Пошта мен құпиясөзді жазыңыз (кемінде 6 таңба).',confirmOff:'Аккаунт ашылды, бірақ кіру орындалмады: Supabase-те поштаны растауды өшіру керек.',authErr:'Болмады: ',
+kk:{login:'Логин',password:'Құпиясөз',signIn:'Кіру',badLogin:'Логин не құпиясөз қате',authErr:'Қате: ',
  waitRole:'Сіз кірдіңіз, бірақ рұқсат әлі берілмеген. Әкімшіден рұқсат сұраңыз.',logout:'Шығу',loading:'Жүктелуде…',loadErr:'Деректер жүктелмеді: ',
  role_admin:'әкімші',role_editor:'редактор',role_reader:'оқырман',admin:'Басқару',
  draftN:n=>`Сіздің өзгерістеріңіз: ${n}`,draftCommentPh:'Әкімшіге түсініктеме (міндетті емес)',draftSend:'Тексеруге жіберу',draftShow:'Қарау',draftDrop:'Бәрін болдырмау',
@@ -318,7 +317,7 @@ kk:{authIntro:'Кіру тек туыстарға арналған. Алғаш �
  saved:'Сақталды',saveErr:'Сақталмады: ',aProp:'Ұсыныстар',aMine:'Менің ұсыныстарым',aUsers:'Қолданушылар',aHist:'Тарих',
  approve:'Қабылдау',reject:'Қабылдамау',approved:'Қабылданды',rejected:'Қабылданбады',pending:'тексерілуде',noProps:'Ұсыныстар жоқ.',
  chAdd:'жаңа',chDel:'жойылды',chMod:'өзгертілді',fParent:'әкесі/анасы',fName:'есімі',fSpouse:'жұбайы',fMother:'анасы',fNote:'жазба',fBorn:'туған',fDied:'қайтыс болған',fUnsure:'тексерілмеген',fTree:'ағаш',
- roleNone:'— рұқсат жоқ —',you2:'(сіз)',users:'Қолданушылар сайтқа алғаш кіргеннен кейін осында шығады.',histEmpty:'Әзірге бос.',
+ roleNone:'— рұқсат жоқ —',uAdd:'Жаңа қолданушы',uCreate:'Құру',uHint:'Логин бос орынсыз, құпиясөз кемінде 4 таңба. Оларды адамға өзіңіз беріңіз.',uNewPass:'Жаңа құпиясөз',uRole:'Рөлі',uSave:'Сақтау',uDelQ:'Шынымен жою?',uShort:'Құпиясөз кемінде 4 таңба',you2:'(сіз)',histEmpty:'Әзірге бос.',
  by:'кім',when:'қашан',printBtn:'А4 басып шығару',doPrint:'Басып шығару',savePdf:'PDF сақтау',pdfMaking:'PDF дайындалуда…',pdfFail:'PDF жасалмады: ол үшін интернет керек',gSearchPh:'Адамды іздеу…',close:'Жабу',printHint:'А4 көлденең, масштаб 100%. Claude ішінде басып шығару мен жүктеу жұмыс істемейді — сақталған файлды кәдімгі браузерде ашыңыз.',treeSh:'1-ағаш',treeMe:'2-ағаш',subSh:'',subMe:'',
  people:'адам',gens:'буын',unsure:'тексерілмеген',vGraph:'Сызба',vList:'Тізім',toMe:'★ Менің тармағым',newRoot:'+ Жаңа ру',
  oV:'Тігінен',oH:'Көлденең',expandAll:'Бәрін ашу',collapse:'Жию',zIn:'Үлкейту',zOut:'Кішірейту',fit:'Толық көрсету',
@@ -425,7 +424,7 @@ function applyLang(){
   document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
   document.querySelectorAll('[data-tp]').forEach(e=>e.placeholder=t(e.dataset.tp));
   document.querySelectorAll('[data-ta]').forEach(e=>{e.setAttribute('aria-label',t(e.dataset.ta));e.title=t(e.dataset.ta);});
-  $('lKk').setAttribute('aria-selected',lang==='kk');document.querySelectorAll('.lsw').forEach(b=>b.setAttribute('aria-selected',b.dataset.l===lang));$('lRu').setAttribute('aria-selected',lang==='ru');
+  $('lKk').setAttribute('aria-selected',lang==='kk');$('lRu').setAttribute('aria-selected',lang==='ru');
   cardBtn();
 }
 function matches(p,q,unsure){
@@ -837,16 +836,14 @@ $('pvPdf').onclick=async()=>{
 
 applyLang();
 function showOnly(id){for(const x of ['auth','wait','loading'])$(x).hidden=x!==id;}
-document.querySelectorAll('.lsw').forEach(b=>b.onclick=()=>{lang=b.dataset.l;ls('.lang',lang);applyLang();});
-async function doAuth(up){const email=$('authEmail').value.trim(),password=$('authPass').value;
-  if(!email||password.length<6){$('authNote').textContent=t('authNeed');return;}
-  $('authSend').disabled=$('authUp').disabled=true;
-  const {data,error}=up?await SB.auth.signUp({email,password}):await SB.auth.signInWithPassword({email,password});
-  $('authSend').disabled=$('authUp').disabled=false;
-  if(error){$('authNote').textContent=t('authErr')+error.message;return;}
-  if(data.session&&!USER)start(data.session);else if(!data.session)$('authNote').textContent=t('confirmOff');}
-$('authForm').onsubmit=e=>{e.preventDefault();doAuth(false);};
-$('authUp').onclick=()=>doAuth(true);
+const toEmail=u=>{u=u.trim().toLowerCase();return u.includes('@')?u:u+'@ftree.local';};
+const shortLogin=e=>(e||'').endsWith('@ftree.local')?e.slice(0,-12):(e||'');
+$('authForm').onsubmit=async e=>{e.preventDefault();const u=$('authEmail').value,password=$('authPass').value;
+  if(!u.trim()||!password)return;$('authSend').disabled=true;$('authNote').textContent='';
+  const {data,error}=await SB.auth.signInWithPassword({email:toEmail(u),password});
+  $('authSend').disabled=false;
+  if(error){$('authNote').textContent=t('badLogin');return;}
+  if(data.session&&!USER)start(data.session);};
 async function logout(){await SB.auth.signOut();location.reload();}
 $('logout').onclick=logout;$('logout2').onclick=logout;
 $('draftSend').onclick=async()=>{const ch=diff();if(!ch.length)return;$('draftSend').disabled=true;
@@ -899,9 +896,25 @@ async function renderAdm(){
     B.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{b.disabled=true;const {error}=await SB.rpc('approve_proposal',{pid:+b.dataset.ap});if(error){toast(error.message);b.disabled=false;return;}toast(t('approved'));await reload();renderAdm();});
     B.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{b.disabled=true;const {error}=await SB.rpc('reject_proposal',{pid:+b.dataset.rj});if(error){toast(error.message);b.disabled=false;return;}toast(t('rejected'));refreshBadge();renderAdm();});
   }else if(admTab==='users'){
-    const {data,error}=await SB.from('profiles').select('id,email,role,created_at').order('created_at',{ascending:false});data&&data.sort((a,b)=>(a.role?1:0)-(b.role?1:0));if(error){B.textContent=error.message;return;}
-    B.innerHTML=`<p class="note">${t('users')}</p><table class="utable"><tbody>${data.map(u=>`<tr><td>${esc(u.email||'')} ${u.id===USER.id?t('you2'):''}</td><td>${u.id===USER.id?t('role_'+u.role):`<select data-uid="${u.id}">${['','reader','editor','admin'].map(r=>`<option value="${r}"${(u.role||'')===r?' selected':''}>${r?t('role_'+r):t('roleNone')}</option>`).join('')}</select>`}</td></tr>`).join('')}</tbody></table>`;
-    B.querySelectorAll('select[data-uid]').forEach(sl=>sl.onchange=async()=>{const {error}=await SB.rpc('set_role',{uid:sl.dataset.uid,new_role:sl.value});toast(error?error.message:t('saved'));refreshBadge();});
+    const {data,error}=await SB.from('profiles').select('id,email,username,role,created_at').order('created_at');if(error){B.textContent=error.message;return;}
+    const ropts=r=>['','reader','editor','admin'].map(x=>`<option value="${x}"${(r||'')===x?' selected':''}>${x?t('role_'+x):t('roleNone')}</option>`).join('');
+    B.innerHTML=`<form class="pcard" id="uNew"><h3>${t('uAdd')}</h3><div class="urow">
+      <input type="text" id="uNewL" required autocapitalize="none" placeholder="${t('login')}"><input type="text" id="uNewP" required minlength="4" placeholder="${t('password')}">
+      <select id="uNewR">${ropts('reader')}</select><button class="primary">${t('uCreate')}</button></div><p class="note">${t('uHint')}</p></form>
+      <table class="utable"><thead><tr><th>${t('login')}</th><th>${t('uNewPass')}</th><th>${t('uRole')}</th><th></th></tr></thead><tbody>${data.map(u=>{const me=u.id===USER.id,l=u.username||shortLogin(u.email);
+        return `<tr data-uid="${u.id}"><td><input type="text" class="uL" value="${esc(l)}" data-old="${esc(l)}"></td><td><input type="text" class="uP" minlength="4" placeholder="••••"></td>
+        <td>${me?t('role_'+u.role)+' '+t('you2'):`<select class="uR">${ropts(u.role)}</select>`}</td>
+        <td class="acts"><button class="uSave">${t('uSave')}</button>${me?'':`<button class="danger uDel">${t('del')}</button>`}</td></tr>`;}).join('')}</tbody></table>`;
+    $('uNew').onsubmit=async e=>{e.preventDefault();const p=$('uNewP').value;if(p.length<4){toast(t('uShort'));return;}
+      const {error}=await SB.rpc('admin_create_user',{p_username:$('uNewL').value.trim(),p_password:p,p_role:$('uNewR').value});
+      if(error){toast(t('authErr')+error.message);return;}toast(t('saved'));refreshBadge();renderAdm();};
+    B.querySelectorAll('tr[data-uid]').forEach(tr=>{const uid=tr.dataset.uid;
+      tr.querySelector('.uSave').onclick=async()=>{const L=tr.querySelector('.uL'),P=tr.querySelector('.uP'),Rr=tr.querySelector('.uR');
+        if(P.value&&P.value.length<4){toast(t('uShort'));return;}
+        const {error}=await SB.rpc('admin_update_user',{p_uid:uid,p_username:L.value.trim()!==L.dataset.old?L.value.trim():null,p_password:P.value||null,p_role:Rr?Rr.value:null});
+        if(error){toast(t('authErr')+error.message);return;}toast(t('saved'));refreshBadge();renderAdm();};
+      const d=tr.querySelector('.uDel');if(d)d.onclick=async()=>{if(!d.dataset.c){d.dataset.c='1';d.textContent=t('uDelQ');return;}
+        const {error}=await SB.rpc('admin_delete_user',{p_uid:uid});if(error){toast(t('authErr')+error.message);return;}toast(t('deleted'));refreshBadge();renderAdm();};});
   }else{
     const {data,error}=await SB.from('history').select('*').order('at',{ascending:false}).limit(50);if(error){B.textContent=error.message;return;}
     B.innerHTML=data.length?data.map(h=>`<div class="pcard"><div class="pmeta">${new Date(h.at).toLocaleString()} · ${esc(h.by_email||'')}${h.proposal_id?' · #'+h.proposal_id:''}</div>${(h.changes||[]).map(changeHtml).join('')}</div>`).join(''):`<p class="note">${t('histEmpty')}</p>`;
@@ -911,13 +924,13 @@ async function start(session){
   USER=session.user;showOnly('loading');
   const {data:prof}=await SB.from('profiles').select('role,me_id,email').eq('id',USER.id).maybeSingle();
   ROLE=prof&&prof.role||null;ME=prof&&prof.me_id!=null?Number(prof.me_id):null;
-  if(!ROLE){$('waitMail').textContent=USER.email;showOnly('wait');return;}
+  if(!ROLE){$('waitMail').textContent=shortLogin(USER.email);showOnly('wait');return;}
   try{await loadSettings();people=await fetchPeople();}catch(e){$('loading').querySelector('p').textContent=t('loadErr')+e.message;return;}
   migrate();setBase();
   if(ROLE==='editor'){applyDraft();}
   document.body.classList.toggle('ro',!canEdit());
   $('importBtn').hidden=ROLE!=='admin';
-  $('who').hidden=false;$('whoTxt').innerHTML=`<b>${esc(USER.email)}</b> · ${t('role_'+ROLE)}`;
+  $('who').hidden=false;$('whoTxt').innerHTML=`<b>${esc(shortLogin(USER.email))}</b> · ${t('role_'+ROLE)}`;
   index();
   for(const p of people){if(depth(p)<=4)open.add(p.id);}
   initExpand();
